@@ -1,0 +1,3 @@
+method,top2_accuracy,mean_rank_A,mean_rank_B,n_queries
+leave_one_out,0.0,9.0,10.0,2
+permutation_shapley,0.0,8.5,10.0,2

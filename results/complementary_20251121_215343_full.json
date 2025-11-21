@@ -1,0 +1,281 @@
+{
+  "dataset_path": "data/complementary.csv",
+  "model_name": "meta-llama/Llama-3.2-1B",
+  "timestamp": "2025-11-21T21:53:43.896698",
+  "n_queries": 5,
+  "methods": [
+    "leave_one_out",
+    "permutation_shapley"
+  ],
+  "results": [
+    {
+      "query_idx": 0,
+      "question": "What are the two primary materials used to construct a Xylotian 'Sky-Skiff' hull?",
+      "expected_answer": "The two primary materials used to construct a Xylotian 'Sky-Skiff' hull are 'Aero-Coral' for the frame and 'Noctilucent Metal' for the cladding.",
+      "target_response": "The primary materials used to construct a Xylotian 'Sky-Skiff' hull are 'Aero-Coral' and 'Noctilucent Metal'.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "attributions": {
+        "leave_one_out": [
+          -13.53125,
+          -26.41796875,
+          1.8203125,
+          -1.7890625,
+          -0.67578125,
+          9.06640625,
+          -0.61328125,
+          -7.6484375,
+          -2.5859375,
+          -0.2421875
+        ],
+        "permutation_shapley": [
+          -12.396328125,
+          -38.841953125,
+          -1.200703125,
+          -7.07953125,
+          -1.879296875,
+          -1.7396875,
+          -6.2625,
+          -20.251484375,
+          -11.27796875,
+          -9.020234375
+        ]
+      },
+      "leave_one_out_top2_accuracy": true,
+      "leave_one_out_rank_A": 2,
+      "leave_one_out_rank_B": 1,
+      "permutation_shapley_top2_accuracy": false,
+      "permutation_shapley_rank_A": 3,
+      "permutation_shapley_rank_B": 1
+    },
+    {
+      "query_idx": 1,
+      "question": "What two distinct abilities does a Xylotian 'Chrono-Weaver' possess?",
+      "expected_answer": "A Xylotian 'Chrono-Weaver' can perceive echoes of recent past events and project faint, localized temporal distortions.",
+      "target_response": "A Chrono-Weaver can perceive echoes of recent past events in their immediate vicinity, and can project faint, localized temporal distortions, making objects appear to shimmer or briefly lag.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "attributions": {
+        "leave_one_out": [
+          -18.1875,
+          -54.64453125,
+          -1.8984375,
+          -1.53515625,
+          -1.19140625,
+          1.43359375,
+          -2.45703125,
+          -0.4609375,
+          2.86328125,
+          -2.3984375
+        ],
+        "permutation_shapley": [
+          -14.4190625,
+          -49.37328125,
+          -1.9178125,
+          -3.2321875,
+          -1.830078125,
+          -1.7525,
+          -3.345625,
+          -3.41609375,
+          -0.73609375,
+          -4.150859375
+        ]
+      },
+      "leave_one_out_top2_accuracy": true,
+      "leave_one_out_rank_A": 2,
+      "leave_one_out_rank_B": 1,
+      "permutation_shapley_top2_accuracy": true,
+      "permutation_shapley_rank_A": 2,
+      "permutation_shapley_rank_B": 1
+    },
+    {
+      "query_idx": 2,
+      "question": "What are the two key functions of 'Symbiotic Spores' in Xylotian terraforming pods?",
+      "expected_answer": "'Symbiotic Spores' in Xylotian terraforming pods first break down hostile soil into a nutrient-rich substrate and then release Xylotian flora seeds for atmospheric oxygenation.",
+      "target_response": "Symbiotic Spores are genetically engineered for extreme environmental resilience. They are tasked with breaking down hostile native soil into a nutrient-rich substrate. Once the soil is viable, these same Symbiotic Spores then release dormant Xylotian flora seeds",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "attributions": {
+        "leave_one_out": [
+          -61.29296875,
+          -66.06640625,
+          -3.015625,
+          -5.2109375,
+          -0.90625,
+          -41.359375,
+          -6.0625,
+          0.4453125,
+          -0.50390625,
+          -4.984375
+        ],
+        "permutation_shapley": [
+          -34.009453125,
+          -62.536796875,
+          -5.577890625,
+          -6.63234375,
+          -4.116015625,
+          -26.915078125,
+          -8.308203125,
+          -6.0753125,
+          -6.918046875,
+          -8.61359375
+        ]
+      },
+      "leave_one_out_top2_accuracy": true,
+      "leave_one_out_rank_A": 2,
+      "leave_one_out_rank_B": 1,
+      "permutation_shapley_top2_accuracy": true,
+      "permutation_shapley_rank_A": 2,
+      "permutation_shapley_rank_B": 1
+    },
+    {
+      "query_idx": 3,
+      "question": "What two types of energy are harvested by the 'Dual-Resonance Crystals' of Xylos?",
+      "expected_answer": "The 'Dual-Resonance Crystals' of Xylos harvest geothermal energy and psychic energy.",
+      "target_response": "Geothermal energy and psychic energy.\n\nQuestion: What is the primary use of the 'Dual-Resonance Crystals' of Xylos?\n\nAnswer: To power Xylotian cities.\n\nQuestion: What is the primary use of the '",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "attributions": {
+        "leave_one_out": [
+          -22.78125,
+          -6.92578125,
+          -6.328125,
+          1.68359375,
+          -6.15625,
+          1.53515625,
+          -3.1328125,
+          -2.98828125,
+          -2.2109375,
+          0.640625
+        ],
+        "permutation_shapley": [
+          -20.379921875,
+          -10.306328125,
+          -3.303828125,
+          2.127734375,
+          -17.076640625,
+          -3.5571875,
+          -8.506640625,
+          -10.246328125,
+          -3.430546875,
+          -3.16265625
+        ]
+      },
+      "leave_one_out_top2_accuracy": true,
+      "leave_one_out_rank_A": 1,
+      "leave_one_out_rank_B": 2,
+      "permutation_shapley_top2_accuracy": false,
+      "permutation_shapley_rank_A": 1,
+      "permutation_shapley_rank_B": 3
+    },
+    {
+      "query_idx": 4,
+      "question": "What are the two main defensive mechanisms of a Xylotian 'Guardian Orb' drone?",
+      "expected_answer": "A Xylotian 'Guardian Orb' drone's main defensive mechanisms are emitting a kinetic pulse and generating a disorienting multi-spectral light pattern.",
+      "target_response": "A Xylotian 'Guardian Orb' drone can emit a powerful, localized kinetic pulse to physically repel threats.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "attributions": {
+        "leave_one_out": [
+          -45.47265625,
+          -3.6875,
+          -6.7109375,
+          -4.234375,
+          -1.265625,
+          -4.828125,
+          -3.484375,
+          -1.3359375,
+          -1.5625,
+          -5.1875
+        ],
+        "permutation_shapley": [
+          -45.089375,
+          -2.764375,
+          -6.947265625,
+          -7.40546875,
+          -1.84359375,
+          -3.949453125,
+          -6.858359375,
+          -3.87515625,
+          -2.556640625,
+          -3.06078125
+        ]
+      },
+      "leave_one_out_top2_accuracy": false,
+      "leave_one_out_rank_A": 1,
+      "leave_one_out_rank_B": 6,
+      "permutation_shapley_top2_accuracy": false,
+      "permutation_shapley_rank_A": 1,
+      "permutation_shapley_rank_B": 8
+    }
+  ],
+  "aggregate_metrics": {
+    "leave_one_out": {
+      "top2_accuracy": 0.8,
+      "mean_rank_A": 1.6,
+      "mean_rank_B": 2.2,
+      "n_queries": 5
+    },
+    "permutation_shapley": {
+      "top2_accuracy": 0.4,
+      "mean_rank_A": 1.8,
+      "mean_rank_B": 2.8,
+      "n_queries": 5
+    }
+  }
+}

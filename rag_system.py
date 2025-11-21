@@ -9,6 +9,7 @@ This module provides core functionality for:
 
 import json
 import ast
+import os
 import pandas as pd
 import torch
 import numpy as np
@@ -16,6 +17,13 @@ from typing import List, Dict, Tuple, Optional
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import warnings
 warnings.filterwarnings('ignore')
+
+# Try to load .env file if python-dotenv is available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed, skip
 
 
 def load_dataset(file_path: str) -> List[Dict]:
@@ -95,19 +103,26 @@ class RAGSystem:
     RAG System for generating responses and computing utilities.
     """
     
-    def __init__(self, model_name: str = "meta-llama/Llama-3.2-1B", device: Optional[str] = None):
+    def __init__(self, model_name: str = "meta-llama/Llama-3.2-1B", device: Optional[str] = None, token: Optional[str] = None):
         """
         Initialize RAG system with LLM model.
         
         Args:
             model_name: HuggingFace model identifier
             device: Device to use ('cuda', 'cpu', or None for auto)
+            token: HuggingFace token for authentication (or set HF_TOKEN env var)
         """
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.model_name = model_name
         
+        # Get token from parameter or environment variable
+        hf_token = token or os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
+        
         print(f"Loading tokenizer for {model_name}...")
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name,
+            token=hf_token
+        )
         self.tokenizer.pad_token = self.tokenizer.eos_token
         
         print(f"Loading model...")
@@ -115,7 +130,8 @@ class RAGSystem:
             model_name,
             torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
             device_map="auto" if self.device == "cuda" else None,
-            low_cpu_mem_usage=True
+            low_cpu_mem_usage=True,
+            token=hf_token
         )
         
         if self.device == "cpu":
