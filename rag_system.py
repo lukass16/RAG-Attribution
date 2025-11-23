@@ -180,15 +180,27 @@ class RAGSystem:
         
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
         
+        # Create attention mask explicitly to avoid warnings
+        attention_mask = inputs.get("attention_mask", None)
+        if attention_mask is None:
+            attention_mask = torch.ones_like(inputs["input_ids"])
+        
+        # Prepare generation kwargs
+        generation_kwargs = {
+            "input_ids": inputs["input_ids"],
+            "attention_mask": attention_mask,
+            "max_new_tokens": max_new_tokens,
+            "pad_token_id": self.tokenizer.eos_token_id,
+            "eos_token_id": self.tokenizer.eos_token_id,
+            "do_sample": do_sample,
+        }
+        
+        # Only add temperature/top_p if sampling is enabled
+        if do_sample:
+            generation_kwargs["temperature"] = temperature
+        
         with torch.no_grad():
-            outputs = self.model.generate(
-                inputs["input_ids"],
-                max_new_tokens=max_new_tokens,
-                temperature=temperature,
-                do_sample=do_sample,
-                pad_token_id=self.tokenizer.eos_token_id,
-                eos_token_id=self.tokenizer.eos_token_id
-            )
+            outputs = self.model.generate(**generation_kwargs)
         
         # Decode only the generated part (excluding prompt)
         generated_ids = outputs[0][inputs["input_ids"].shape[1]:]
