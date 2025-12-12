@@ -113,9 +113,17 @@ def run_whitebox_attribution_experiment(
     run_started = datetime.now()
     run_started_ts = run_started.isoformat()
     
+    # Auto-select eager attention if 'attention' method will be used
+    effective_attn_impl = attn_implementation
+    # Check if attention method will be used (either in methods list or in defaults)
+    will_use_attention = (methods is None) or ('attention' in methods)
+    if will_use_attention and effective_attn_impl is None:
+        print("Note: 'attention' method requires eager attention. Auto-setting attn_implementation='eager'")
+        effective_attn_impl = 'eager'
+    
     # Initialize RAG system
     print("Initializing RAG system...")
-    rag = RAGSystem(model_name=model_name, device=device, attn_implementation=attn_implementation)
+    rag = RAGSystem(model_name=model_name, device=device, attn_implementation=effective_attn_impl)
     print("RAG system ready!\n")
     
     # Load dataset
