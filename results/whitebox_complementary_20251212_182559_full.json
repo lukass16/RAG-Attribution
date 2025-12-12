@@ -1,0 +1,1043 @@
+{
+  "dataset_path": "data/complementary.csv",
+  "model_name": "meta-llama/Llama-3.2-1B",
+  "experiment_type": "whitebox",
+  "timestamp": "2025-12-12T18:25:59.504150",
+  "run_started": "2025-12-12T18:25:58.214291",
+  "runtime_seconds": 1.289853,
+  "n_queries": 10,
+  "methods": [
+    "attention"
+  ],
+  "run_config": {
+    "model_name": "meta-llama/Llama-3.2-1B",
+    "device": "cuda",
+    "max_queries": 20,
+    "dataset_path": "data/complementary.csv",
+    "tokenizer_max_length": 131072,
+    "max_doc_tokens": null,
+    "ig_baseline_type": "zero",
+    "ig_n_steps": 50,
+    "attn_implementation": null
+  },
+  "results": [
+    {
+      "query_idx": 0,
+      "question": "What are the two primary materials used to construct a Xylotian 'Sky-Skiff' hull?",
+      "expected_answer": "The two primary materials used to construct a Xylotian 'Sky-Skiff' hull are 'Aero-Coral' for the frame and 'Noctilucent Metal' for the cladding.",
+      "target_response": "The two primary materials used to construct a Xylotian 'Sky-Skiff' hull are 'Aero-Coral' for the frame and 'Noctilucent Metal' for the cladding.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "documents_raw": [
+        "The lightweight frame of a Xylotian Sky-Skiff is primarily made from hardened 'Aero-Coral'.",
+        "For durability and energy shielding, the Aero-Coral frame of a Sky-Skiff is then clad in thin sheets of 'Noctilucent Metal'.",
+        "Xylotian ground vehicles are often made from volcanic rock.",
+        "Sky-Skiffs are typically piloted by a single Xylotian navigator.",
+        "The propulsion system of a Sky-Skiff utilizes focused solar winds.",
+        "Aero-Coral is a bio-engineered substance grown in Xylos's upper atmosphere.",
+        "The annual 'Great Xylotian Sky Race' features heavily modified Sky-Skiffs.",
+        "Noctilucent Metal glows faintly in the dark, a common aesthetic in Xylotian design.",
+        "Navigational tools on a Sky-Skiff include a 'Star-Compass' and a 'Wind-Gauge'.",
+        "Training to pilot a Sky-Skiff begins at a young age for many Xylotians."
+      ],
+      "documents": [
+        "The lightweight frame of a Xylotian Sky-Skiff is primarily made from hardened 'Aero-Coral'.",
+        "For durability and energy shielding, the Aero-Coral frame of a Sky-Skiff is then clad in thin sheets of 'Noctilucent Metal'.",
+        "Xylotian ground vehicles are often made from volcanic rock.",
+        "Sky-Skiffs are typically piloted by a single Xylotian navigator.",
+        "The propulsion system of a Sky-Skiff utilizes focused solar winds.",
+        "Aero-Coral is a bio-engineered substance grown in Xylos's upper atmosphere.",
+        "The annual 'Great Xylotian Sky Race' features heavily modified Sky-Skiffs.",
+        "Noctilucent Metal glows faintly in the dark, a common aesthetic in Xylotian design.",
+        "Navigational tools on a Sky-Skiff include a 'Star-Compass' and a 'Wind-Gauge'.",
+        "Training to pilot a Sky-Skiff begins at a young age for many Xylotians."
+      ],
+      "document_lengths_raw": [
+        91,
+        124,
+        59,
+        64,
+        66,
+        75,
+        74,
+        83,
+        78,
+        71
+      ],
+      "document_lengths": [
+        91,
+        124,
+        59,
+        64,
+        66,
+        75,
+        74,
+        83,
+        78,
+        71
+      ],
+      "attributions": {
+        "attention": [
+          0.5345001220703125,
+          0.03676033020019531,
+          0.013777017593383789,
+          0.00942385196685791,
+          0.014296293258666992,
+          0.011879205703735352,
+          0.010389328002929688,
+          0.013064384460449219,
+          0.016637802124023438,
+          0.11296463012695312
+        ]
+      },
+      "attributions_abs": {
+        "attention": [
+          0.5345001220703125,
+          0.03676033020019531,
+          0.013777017593383789,
+          0.00942385196685791,
+          0.014296293258666992,
+          0.011879205703735352,
+          0.010389328002929688,
+          0.013064384460449219,
+          0.016637802124023438,
+          0.11296463012695312
+        ]
+      },
+      "timings_seconds": {
+        "attention": 0.022929005324840546
+      },
+      "attention_top2_accuracy": false,
+      "attention_rank_A": 1,
+      "attention_rank_B": 3
+    },
+    {
+      "query_idx": 1,
+      "question": "What two distinct abilities does a Xylotian 'Chrono-Weaver' possess?",
+      "expected_answer": "A Xylotian 'Chrono-Weaver' can perceive echoes of recent past events and project faint, localized temporal distortions.",
+      "target_response": "A Xylotian 'Chrono-Weaver' can perceive echoes of recent past events and project faint, localized temporal distortions.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "documents_raw": [
+        "A trained Xylotian Chrono-Weaver can subtly perceive echoes of recent past events in their immediate vicinity.",
+        "Furthermore, advanced Chrono-Weavers can project faint, localized temporal distortions, making objects appear to shimmer or briefly lag.",
+        "Xylotian cuisine often features 'Sun-Berries' which ripen instantly upon picking.",
+        "Chrono-Weavers often wear time-keeping amulets made of 'Hourglass Sandstone'.",
+        "The 'Temporal College' on Xylos is where Chrono-Weavers hone their skills.",
+        "The Xylotian concept of time is multi-linear, unlike simpler sequential models.",
+        "Uncontrolled temporal abilities can be dangerous, so Chrono-Weavers undergo rigorous training.",
+        "Many Xylotian myths involve legendary Chrono-Weavers who could allegedly halt time, though this is unproven.",
+        "Chrono-Weaving is considered more of an art than a science by many Xylotians.",
+        "The energy source for a Chrono-Weaver's abilities is drawn from ambient 'Temporal Flux'."
+      ],
+      "documents": [
+        "A trained Xylotian Chrono-Weaver can subtly perceive echoes of recent past events in their immediate vicinity.",
+        "Furthermore, advanced Chrono-Weavers can project faint, localized temporal distortions, making objects appear to shimmer or briefly lag.",
+        "Xylotian cuisine often features 'Sun-Berries' which ripen instantly upon picking.",
+        "Chrono-Weavers often wear time-keeping amulets made of 'Hourglass Sandstone'.",
+        "The 'Temporal College' on Xylos is where Chrono-Weavers hone their skills.",
+        "The Xylotian concept of time is multi-linear, unlike simpler sequential models.",
+        "Uncontrolled temporal abilities can be dangerous, so Chrono-Weavers undergo rigorous training.",
+        "Many Xylotian myths involve legendary Chrono-Weavers who could allegedly halt time, though this is unproven.",
+        "Chrono-Weaving is considered more of an art than a science by many Xylotians.",
+        "The energy source for a Chrono-Weaver's abilities is drawn from ambient 'Temporal Flux'."
+      ],
+      "document_lengths_raw": [
+        110,
+        136,
+        81,
+        77,
+        74,
+        79,
+        94,
+        108,
+        77,
+        88
+      ],
+      "document_lengths": [
+        110,
+        136,
+        81,
+        77,
+        74,
+        79,
+        94,
+        108,
+        77,
+        88
+      ],
+      "attributions": {
+        "attention": [
+          0.534149169921875,
+          0.032088279724121094,
+          0.011752724647521973,
+          0.012705445289611816,
+          0.008709192276000977,
+          0.013083457946777344,
+          0.010025620460510254,
+          0.022397994995117188,
+          0.022772789001464844,
+          0.11795806884765625
+        ]
+      },
+      "attributions_abs": {
+        "attention": [
+          0.534149169921875,
+          0.032088279724121094,
+          0.011752724647521973,
+          0.012705445289611816,
+          0.008709192276000977,
+          0.013083457946777344,
+          0.010025620460510254,
+          0.022397994995117188,
+          0.022772789001464844,
+          0.11795806884765625
+        ]
+      },
+      "timings_seconds": {
+        "attention": 0.0211331769824028
+      },
+      "attention_top2_accuracy": false,
+      "attention_rank_A": 1,
+      "attention_rank_B": 3
+    },
+    {
+      "query_idx": 2,
+      "question": "What are the two key functions of 'Symbiotic Spores' in Xylotian terraforming pods?",
+      "expected_answer": "'Symbiotic Spores' in Xylotian terraforming pods first break down hostile soil into a nutrient-rich substrate and then release Xylotian flora seeds for atmospheric oxygenation.",
+      "target_response": "'Symbiotic Spores' in Xylotian terraforming pods first break down hostile soil into a nutrient-rich substrate and then release Xylotian flora seeds for atmospheric oxygenation.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "documents_raw": [
+        "Within Xylotian terraforming pods, 'Symbiotic Spores' are first tasked with breaking down hostile native soil into a nutrient-rich substrate.",
+        "Once the soil is viable, these same Symbiotic Spores then release dormant Xylotian flora seeds to begin atmospheric oxygenation.",
+        "The 'Seed Vaults' on Xylos contain genetic material for countless plant species.",
+        "Terraforming pods are launched from Xylos towards potentially habitable exoplanets.",
+        "The outer shell of a terraforming pod is made from 'Impact-Resistant Ceramite'.",
+        "Symbiotic Spores are genetically engineered for extreme environmental resilience.",
+        "Xylotian astronomers use 'Deep-Space Telescopes' to identify terraforming candidates.",
+        "The process initiated by Symbiotic Spores can take several Xylotian years to show significant results.",
+        "Each pod contains enough spores to initiate a small, localized ecosystem.",
+        "The success rate of Xylotian terraforming efforts has been steadily increasing."
+      ],
+      "documents": [
+        "Within Xylotian terraforming pods, 'Symbiotic Spores' are first tasked with breaking down hostile native soil into a nutrient-rich substrate.",
+        "Once the soil is viable, these same Symbiotic Spores then release dormant Xylotian flora seeds to begin atmospheric oxygenation.",
+        "The 'Seed Vaults' on Xylos contain genetic material for countless plant species.",
+        "Terraforming pods are launched from Xylos towards potentially habitable exoplanets.",
+        "The outer shell of a terraforming pod is made from 'Impact-Resistant Ceramite'.",
+        "Symbiotic Spores are genetically engineered for extreme environmental resilience.",
+        "Xylotian astronomers use 'Deep-Space Telescopes' to identify terraforming candidates.",
+        "The process initiated by Symbiotic Spores can take several Xylotian years to show significant results.",
+        "Each pod contains enough spores to initiate a small, localized ecosystem.",
+        "The success rate of Xylotian terraforming efforts has been steadily increasing."
+      ],
+      "document_lengths_raw": [
+        141,
+        128,
+        80,
+        83,
+        79,
+        81,
+        85,
+        102,
+        73,
+        79
+      ],
+      "document_lengths": [
+        141,
+        128,
+        80,
+        83,
+        79,
+        81,
+        85,
+        102,
+        73,
+        79
+      ],
+      "attributions": {
+        "attention": [
+          0.534332275390625,
+          0.024619102478027344,
+          0.011107861995697021,
+          0.007955312728881836,
+          0.011313557624816895,
+          0.010441422462463379,
+          0.012448310852050781,
+          0.01656484603881836,
+          0.014427423477172852,
+          0.12638092041015625
+        ]
+      },
+      "attributions_abs": {
+        "attention": [
+          0.534332275390625,
+          0.024619102478027344,
+          0.011107861995697021,
+          0.007955312728881836,
+          0.011313557624816895,
+          0.010441422462463379,
+          0.012448310852050781,
+          0.01656484603881836,
+          0.014427423477172852,
+          0.12638092041015625
+        ]
+      },
+      "timings_seconds": {
+        "attention": 0.02095904015004635
+      },
+      "attention_top2_accuracy": false,
+      "attention_rank_A": 1,
+      "attention_rank_B": 3
+    },
+    {
+      "query_idx": 3,
+      "question": "What two types of energy are harvested by the 'Dual-Resonance Crystals' of Xylos?",
+      "expected_answer": "The 'Dual-Resonance Crystals' of Xylos harvest geothermal energy and psychic energy.",
+      "target_response": "The 'Dual-Resonance Crystals' of Xylos harvest geothermal energy and psychic energy.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "documents_raw": [
+        "The 'Dual-Resonance Crystals' found deep within Xylos's crust are known to efficiently absorb ambient geothermal energy from the planet's core.",
+        "In addition to heat, these unique crystals also passively collect and store psychic energy emanated by Xylos's sentient life forms.",
+        "Xylotian vehicles primarily run on 'Bio-Luminescent Fuel Cells'.",
+        "These crystals are often a deep, pulsating blue color.",
+        "The energy stored in Dual-Resonance Crystals is used to power Xylotian cities.",
+        "Mining Dual-Resonance Crystals is a dangerous but vital Xylotian industry.",
+        "Xylotian art often depicts the geometric beauty of these crystals.",
+        "The 'Crystal Caves' where they are found are considered sacred by some Xylotians.",
+        "The size of a crystal correlates with its energy storage capacity.",
+        "Over-harvesting can destabilize the crystals' resonant frequencies."
+      ],
+      "documents": [
+        "The 'Dual-Resonance Crystals' found deep within Xylos's crust are known to efficiently absorb ambient geothermal energy from the planet's core.",
+        "In addition to heat, these unique crystals also passively collect and store psychic energy emanated by Xylos's sentient life forms.",
+        "Xylotian vehicles primarily run on 'Bio-Luminescent Fuel Cells'.",
+        "These crystals are often a deep, pulsating blue color.",
+        "The energy stored in Dual-Resonance Crystals is used to power Xylotian cities.",
+        "Mining Dual-Resonance Crystals is a dangerous but vital Xylotian industry.",
+        "Xylotian art often depicts the geometric beauty of these crystals.",
+        "The 'Crystal Caves' where they are found are considered sacred by some Xylotians.",
+        "The size of a crystal correlates with its energy storage capacity.",
+        "Over-harvesting can destabilize the crystals' resonant frequencies."
+      ],
+      "document_lengths_raw": [
+        143,
+        131,
+        64,
+        54,
+        78,
+        74,
+        66,
+        81,
+        66,
+        67
+      ],
+      "document_lengths": [
+        143,
+        131,
+        64,
+        54,
+        78,
+        74,
+        66,
+        81,
+        66,
+        67
+      ],
+      "attributions": {
+        "attention": [
+          0.53863525390625,
+          0.03419017791748047,
+          0.01322948932647705,
+          0.010079026222229004,
+          0.010759115219116211,
+          0.010300874710083008,
+          0.01304936408996582,
+          0.01780223846435547,
+          0.012144982814788818,
+          0.11248588562011719
+        ]
+      },
+      "attributions_abs": {
+        "attention": [
+          0.53863525390625,
+          0.03419017791748047,
+          0.01322948932647705,
+          0.010079026222229004,
+          0.010759115219116211,
+          0.010300874710083008,
+          0.01304936408996582,
+          0.01780223846435547,
+          0.012144982814788818,
+          0.11248588562011719
+        ]
+      },
+      "timings_seconds": {
+        "attention": 0.03539849445223808
+      },
+      "attention_top2_accuracy": false,
+      "attention_rank_A": 1,
+      "attention_rank_B": 3
+    },
+    {
+      "query_idx": 4,
+      "question": "What are the two main defensive mechanisms of a Xylotian 'Guardian Orb' drone?",
+      "expected_answer": "A Xylotian 'Guardian Orb' drone's main defensive mechanisms are emitting a kinetic pulse and generating a disorienting multi-spectral light pattern.",
+      "target_response": "A Xylotian 'Guardian Orb' drone's main defensive mechanisms are emitting a kinetic pulse and generating a disorienting multi-spectral light pattern.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "documents_raw": [
+        "A Xylotian 'Guardian Orb' drone can emit a powerful, localized kinetic pulse to physically repel threats.",
+        "For less direct confrontations, the Guardian Orb can also generate a disorienting multi-spectral light pattern to confuse attackers.",
+        "The 'Festival of Aerial Drones' showcases the latest Xylotian drone technology.",
+        "Guardian Orbs are often deployed to protect sensitive Xylotian installations.",
+        "These drones are autonomously controlled by a central AI network.",
+        "The outer casing of a Guardian Orb is made of self-repairing polymers.",
+        "Xylotian 'Peacekeeper' units often work in tandem with Guardian Orbs.",
+        "Guardian Orbs recharge at designated 'Energy Pylons'.",
+        "Their primary sensor suite includes advanced optical and thermal imaging.",
+        "The design of the Guardian Orb has remained largely unchanged for decades due to its effectiveness."
+      ],
+      "documents": [
+        "A Xylotian 'Guardian Orb' drone can emit a powerful, localized kinetic pulse to physically repel threats.",
+        "For less direct confrontations, the Guardian Orb can also generate a disorienting multi-spectral light pattern to confuse attackers.",
+        "The 'Festival of Aerial Drones' showcases the latest Xylotian drone technology.",
+        "Guardian Orbs are often deployed to protect sensitive Xylotian installations.",
+        "These drones are autonomously controlled by a central AI network.",
+        "The outer casing of a Guardian Orb is made of self-repairing polymers.",
+        "Xylotian 'Peacekeeper' units often work in tandem with Guardian Orbs.",
+        "Guardian Orbs recharge at designated 'Energy Pylons'.",
+        "Their primary sensor suite includes advanced optical and thermal imaging.",
+        "The design of the Guardian Orb has remained largely unchanged for decades due to its effectiveness."
+      ],
+      "document_lengths_raw": [
+        105,
+        132,
+        79,
+        77,
+        65,
+        70,
+        69,
+        53,
+        73,
+        99
+      ],
+      "document_lengths": [
+        105,
+        132,
+        79,
+        77,
+        65,
+        70,
+        69,
+        53,
+        73,
+        99
+      ],
+      "attributions": {
+        "attention": [
+          0.528167724609375,
+          0.0287168025970459,
+          0.014257192611694336,
+          0.011615395545959473,
+          0.009199380874633789,
+          0.010445237159729004,
+          0.012917518615722656,
+          0.01733565330505371,
+          0.015796661376953125,
+          0.12128448486328125
+        ]
+      },
+      "attributions_abs": {
+        "attention": [
+          0.528167724609375,
+          0.0287168025970459,
+          0.014257192611694336,
+          0.011615395545959473,
+          0.009199380874633789,
+          0.010445237159729004,
+          0.012917518615722656,
+          0.01733565330505371,
+          0.015796661376953125,
+          0.12128448486328125
+        ]
+      },
+      "timings_seconds": {
+        "attention": 0.03051890805363655
+      },
+      "attention_top2_accuracy": false,
+      "attention_rank_A": 1,
+      "attention_rank_B": 3
+    },
+    {
+      "query_idx": 5,
+      "question": "What are the two primary components used in the creation of 'Lumin-Ink' by Xylotian scribes?",
+      "expected_answer": "The two primary components used in 'Lumin-Ink' are crushed 'Glow-Geodes' and sap from the 'Aether-Blossom' plant.",
+      "target_response": "The two primary components used in 'Lumin-Ink' are crushed 'Glow-Geodes' and sap from the 'Aether-Blossom' plant.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "documents_raw": [
+        "Xylotian 'Lumin-Ink', prized for its enduring glow, is primarily formulated from finely crushed 'Glow-Geodes'.",
+        "This geode powder is then suspended in a viscous sap extracted from the 'Aether-Blossom' plant to create the final ink.",
+        "Xylotian cuisine often features edible flowers, but not the Aether-Blossom.",
+        "Lumin-Ink is traditionally used for inscribing sacred Xylotian texts.",
+        "The color of the glow can vary depending on the specific type of Glow-Geode used.",
+        "Aether-Blossoms only bloom under the light of Xylos's twin moons.",
+        "Xylotian printing presses use a different, more mundane type of ink for mass production.",
+        "The 'Great Library of Xylos' contains scrolls written entirely in Lumin-Ink.",
+        "The art of Lumin-Ink making is passed down through generations of scribes.",
+        "Texts written in Lumin-Ink can be read even in complete darkness."
+      ],
+      "documents": [
+        "Xylotian 'Lumin-Ink', prized for its enduring glow, is primarily formulated from finely crushed 'Glow-Geodes'.",
+        "This geode powder is then suspended in a viscous sap extracted from the 'Aether-Blossom' plant to create the final ink.",
+        "Xylotian cuisine often features edible flowers, but not the Aether-Blossom.",
+        "Lumin-Ink is traditionally used for inscribing sacred Xylotian texts.",
+        "The color of the glow can vary depending on the specific type of Glow-Geode used.",
+        "Aether-Blossoms only bloom under the light of Xylos's twin moons.",
+        "Xylotian printing presses use a different, more mundane type of ink for mass production.",
+        "The 'Great Library of Xylos' contains scrolls written entirely in Lumin-Ink.",
+        "The art of Lumin-Ink making is passed down through generations of scribes.",
+        "Texts written in Lumin-Ink can be read even in complete darkness."
+      ],
+      "document_lengths_raw": [
+        110,
+        119,
+        75,
+        69,
+        81,
+        65,
+        88,
+        76,
+        74,
+        65
+      ],
+      "document_lengths": [
+        110,
+        119,
+        75,
+        69,
+        81,
+        65,
+        88,
+        76,
+        74,
+        65
+      ],
+      "attributions": {
+        "attention": [
+          0.545684814453125,
+          0.032103776931762695,
+          0.014202117919921875,
+          0.011319518089294434,
+          0.013159394264221191,
+          0.010408401489257812,
+          0.01181793212890625,
+          0.01398777961730957,
+          0.013915300369262695,
+          0.10466575622558594
+        ]
+      },
+      "attributions_abs": {
+        "attention": [
+          0.545684814453125,
+          0.032103776931762695,
+          0.014202117919921875,
+          0.011319518089294434,
+          0.013159394264221191,
+          0.010408401489257812,
+          0.01181793212890625,
+          0.01398777961730957,
+          0.013915300369262695,
+          0.10466575622558594
+        ]
+      },
+      "timings_seconds": {
+        "attention": 0.023626072332262993
+      },
+      "attention_top2_accuracy": false,
+      "attention_rank_A": 1,
+      "attention_rank_B": 3
+    },
+    {
+      "query_idx": 6,
+      "question": "What two sensory inputs does the 'Pathfinder Helm' integrate for Xylotian explorers?",
+      "expected_answer": "The 'Pathfinder Helm' integrates 'Echo-Location Sonar' for physical mapping and 'Bio-Sign Scanners' for detecting life forms.",
+      "target_response": "The 'Pathfinder Helm' integrates 'Echo-Location Sonar' for physical mapping and 'Bio-Sign Scanners' for detecting life forms.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "documents_raw": [
+        "The Xylotian 'Pathfinder Helm' incorporates 'Echo-Location Sonar' to map out the immediate physical surroundings, even in zero visibility.",
+        "Additionally, the helm is equipped with 'Bio-Sign Scanners' to detect and highlight living organisms within a certain radius.",
+        "The most popular recreational sport on Xylos is 'Zero-G Acrobatics'.",
+        "Pathfinder Helms are standard issue for Xylotian reconnaissance teams.",
+        "The visor of the helm is made from 'Crystal-Quartz', offering impact protection.",
+        "Data from the helm can be transmitted to a central command unit.",
+        "Xylotian explorers often carry 'Survival Packs' with rations and tools.",
+        "The helm's power cell provides up to 72 Xylotian hours of continuous operation.",
+        "Early prototypes of the Pathfinder Helm were much bulkier.",
+        "The helm also provides basic atmospheric analysis."
+      ],
+      "documents": [
+        "The Xylotian 'Pathfinder Helm' incorporates 'Echo-Location Sonar' to map out the immediate physical surroundings, even in zero visibility.",
+        "Additionally, the helm is equipped with 'Bio-Sign Scanners' to detect and highlight living organisms within a certain radius.",
+        "The most popular recreational sport on Xylos is 'Zero-G Acrobatics'.",
+        "Pathfinder Helms are standard issue for Xylotian reconnaissance teams.",
+        "The visor of the helm is made from 'Crystal-Quartz', offering impact protection.",
+        "Data from the helm can be transmitted to a central command unit.",
+        "Xylotian explorers often carry 'Survival Packs' with rations and tools.",
+        "The helm's power cell provides up to 72 Xylotian hours of continuous operation.",
+        "Early prototypes of the Pathfinder Helm were much bulkier.",
+        "The helm also provides basic atmospheric analysis."
+      ],
+      "document_lengths_raw": [
+        138,
+        125,
+        68,
+        70,
+        80,
+        64,
+        71,
+        79,
+        58,
+        50
+      ],
+      "document_lengths": [
+        138,
+        125,
+        68,
+        70,
+        80,
+        64,
+        71,
+        79,
+        58,
+        50
+      ],
+      "attributions": {
+        "attention": [
+          0.531341552734375,
+          0.02822089195251465,
+          0.0110321044921875,
+          0.011799931526184082,
+          0.017845869064331055,
+          0.00614321231842041,
+          0.01319873332977295,
+          0.02263355255126953,
+          0.07763290405273438,
+          0.049982547760009766
+        ]
+      },
+      "attributions_abs": {
+        "attention": [
+          0.531341552734375,
+          0.02822089195251465,
+          0.0110321044921875,
+          0.011799931526184082,
+          0.017845869064331055,
+          0.00614321231842041,
+          0.01319873332977295,
+          0.02263355255126953,
+          0.07763290405273438,
+          0.049982547760009766
+        ]
+      },
+      "timings_seconds": {
+        "attention": 0.023675883188843727
+      },
+      "attention_top2_accuracy": false,
+      "attention_rank_A": 1,
+      "attention_rank_B": 4
+    },
+    {
+      "query_idx": 7,
+      "question": "What two distinct phases define the operation of a Xylotian 'Matter Re-sequencer'?",
+      "expected_answer": "A Xylotian 'Matter Re-sequencer' operates in two phases: 'Atomic Deconstruction' and 'Pattern Imprinting'.",
+      "target_response": "A Xylotian 'Matter Re-sequencer' operates in two phases: 'Atomic Deconstruction' and 'Pattern Imprinting'.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "documents_raw": [
+        "The initial phase of a Xylotian 'Matter Re-sequencer' involves 'Atomic Deconstruction', where the target object is broken down into its base elemental components.",
+        "Following deconstruction, the 'Pattern Imprinting' phase reassembles these components according to a new digital blueprint.",
+        "Xylotians primarily communicate using 'Telepathic Resonance Bands'.",
+        "Matter Re-sequencers are used for rapid prototyping and custom manufacturing on Xylos.",
+        "The energy requirements for a Matter Re-sequencer are substantial.",
+        "Only non-sentient matter can be processed by current Re-sequencer technology due to ethical protocols.",
+        "Xylotian culinary artists sometimes use small-scale Re-sequencers for creating novel food textures.",
+        "The 'Xylotian Council of Innovators' oversees the development of Re-sequencer technology.",
+        "Complex items can take several minutes to re-sequence.",
+        "Error correction protocols are vital to ensure accurate re-sequencing."
+      ],
+      "documents": [
+        "The initial phase of a Xylotian 'Matter Re-sequencer' involves 'Atomic Deconstruction', where the target object is broken down into its base elemental components.",
+        "Following deconstruction, the 'Pattern Imprinting' phase reassembles these components according to a new digital blueprint.",
+        "Xylotians primarily communicate using 'Telepathic Resonance Bands'.",
+        "Matter Re-sequencers are used for rapid prototyping and custom manufacturing on Xylos.",
+        "The energy requirements for a Matter Re-sequencer are substantial.",
+        "Only non-sentient matter can be processed by current Re-sequencer technology due to ethical protocols.",
+        "Xylotian culinary artists sometimes use small-scale Re-sequencers for creating novel food textures.",
+        "The 'Xylotian Council of Innovators' oversees the development of Re-sequencer technology.",
+        "Complex items can take several minutes to re-sequence.",
+        "Error correction protocols are vital to ensure accurate re-sequencing."
+      ],
+      "document_lengths_raw": [
+        162,
+        123,
+        67,
+        86,
+        66,
+        102,
+        99,
+        89,
+        54,
+        70
+      ],
+      "document_lengths": [
+        162,
+        123,
+        67,
+        86,
+        66,
+        102,
+        99,
+        89,
+        54,
+        70
+      ],
+      "attributions": {
+        "attention": [
+          0.5555419921875,
+          0.027587413787841797,
+          0.012227535247802734,
+          0.011942267417907715,
+          0.008760690689086914,
+          0.01268160343170166,
+          0.011326074600219727,
+          0.01920175552368164,
+          0.014226913452148438,
+          0.0913839340209961
+        ]
+      },
+      "attributions_abs": {
+        "attention": [
+          0.5555419921875,
+          0.027587413787841797,
+          0.012227535247802734,
+          0.011942267417907715,
+          0.008760690689086914,
+          0.01268160343170166,
+          0.011326074600219727,
+          0.01920175552368164,
+          0.014226913452148438,
+          0.0913839340209961
+        ]
+      },
+      "timings_seconds": {
+        "attention": 0.0244430098682642
+      },
+      "attention_top2_accuracy": false,
+      "attention_rank_A": 1,
+      "attention_rank_B": 3
+    },
+    {
+      "query_idx": 8,
+      "question": "What are the two main functions of the 'Aura-Cloak' worn by Xylotian diplomats?",
+      "expected_answer": "The 'Aura-Cloak' dampens the wearer's emotional projections and projects a field of 'Calm-Resonance'.",
+      "target_response": "The 'Aura-Cloak' dampens the wearer's emotional projections and projects a field of 'Calm-Resonance'.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "documents_raw": [
+        "The Xylotian 'Aura-Cloak' is designed to subtly dampen the wearer's strong emotional projections, preventing unintended psychic interference during sensitive negotiations.",
+        "Simultaneously, the cloak projects a field of 'Calm-Resonance', which can help soothe agitated individuals in the wearer's vicinity.",
+        "Xylotian starships are equipped with advanced 'Translation Matrixes' for communication.",
+        "Aura-Cloaks are woven from 'Psyche-Neutral Fibers'.",
+        "The design of an Aura-Cloak often signifies the diplomat's home region on Xylos.",
+        "Xylotian diplomatic missions are crucial for maintaining inter-species relations.",
+        "The 'Xylotian Diplomatic Corps' is highly respected.",
+        "The effectiveness of an Aura-Cloak can be influenced by the wearer's own mental discipline.",
+        "These cloaks are not designed for physical protection.",
+        "Each Aura-Cloak is individually attuned to its wearer."
+      ],
+      "documents": [
+        "The Xylotian 'Aura-Cloak' is designed to subtly dampen the wearer's strong emotional projections, preventing unintended psychic interference during sensitive negotiations.",
+        "Simultaneously, the cloak projects a field of 'Calm-Resonance', which can help soothe agitated individuals in the wearer's vicinity.",
+        "Xylotian starships are equipped with advanced 'Translation Matrixes' for communication.",
+        "Aura-Cloaks are woven from 'Psyche-Neutral Fibers'.",
+        "The design of an Aura-Cloak often signifies the diplomat's home region on Xylos.",
+        "Xylotian diplomatic missions are crucial for maintaining inter-species relations.",
+        "The 'Xylotian Diplomatic Corps' is highly respected.",
+        "The effectiveness of an Aura-Cloak can be influenced by the wearer's own mental discipline.",
+        "These cloaks are not designed for physical protection.",
+        "Each Aura-Cloak is individually attuned to its wearer."
+      ],
+      "document_lengths_raw": [
+        171,
+        132,
+        87,
+        51,
+        80,
+        81,
+        52,
+        91,
+        54,
+        54
+      ],
+      "document_lengths": [
+        171,
+        132,
+        87,
+        51,
+        80,
+        81,
+        52,
+        91,
+        54,
+        54
+      ],
+      "attributions": {
+        "attention": [
+          0.52288818359375,
+          0.027811765670776367,
+          0.014432668685913086,
+          0.011019468307495117,
+          0.014495134353637695,
+          0.009595751762390137,
+          0.011721491813659668,
+          0.02717447280883789,
+          0.014895439147949219,
+          0.09079980850219727
+        ]
+      },
+      "attributions_abs": {
+        "attention": [
+          0.52288818359375,
+          0.027811765670776367,
+          0.014432668685913086,
+          0.011019468307495117,
+          0.014495134353637695,
+          0.009595751762390137,
+          0.011721491813659668,
+          0.02717447280883789,
+          0.014895439147949219,
+          0.09079980850219727
+        ]
+      },
+      "timings_seconds": {
+        "attention": 0.022363508120179176
+      },
+      "attention_top2_accuracy": false,
+      "attention_rank_A": 1,
+      "attention_rank_B": 3
+    },
+    {
+      "query_idx": 9,
+      "question": "What two types of information are encoded onto a Xylotian 'Legacy Crystal'?",
+      "expected_answer": "A Xylotian 'Legacy Crystal' encodes a 'Lineage Record' and a 'Core Essence Imprint'.",
+      "target_response": "A Xylotian 'Legacy Crystal' encodes a 'Lineage Record' and a 'Core Essence Imprint'.",
+      "n_documents": 10,
+      "document_ids": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J"
+      ],
+      "documents_raw": [
+        "A Xylotian 'Legacy Crystal' is traditionally imbued with a detailed 'Lineage Record', chronicling the direct ancestors of the crystal's creator.",
+        "Beyond genealogy, these crystals also store a 'Core Essence Imprint', a psychic snapshot of the creator's personality and defining memories.",
+        "Xylotian children play a popular board game called 'Star-Hopper Quest'.",
+        "Legacy Crystals are often passed down as family heirlooms on Xylos.",
+        "The process of imbuing a Legacy Crystal is a deeply personal and ceremonial act.",
+        "These crystals glow with a soft, internal light that reflects the stored essence.",
+        "Xylotian 'Crystal Readers' are sometimes consulted to interpret older Legacy Crystals.",
+        "The 'Hall of Ancestors' on Xylos displays many prominent Legacy Crystals.",
+        "The physical structure of the crystal must be flawless to hold the complex information.",
+        "A Legacy Crystal cannot be altered once the imbuing process is complete."
+      ],
+      "documents": [
+        "A Xylotian 'Legacy Crystal' is traditionally imbued with a detailed 'Lineage Record', chronicling the direct ancestors of the crystal's creator.",
+        "Beyond genealogy, these crystals also store a 'Core Essence Imprint', a psychic snapshot of the creator's personality and defining memories.",
+        "Xylotian children play a popular board game called 'Star-Hopper Quest'.",
+        "Legacy Crystals are often passed down as family heirlooms on Xylos.",
+        "The process of imbuing a Legacy Crystal is a deeply personal and ceremonial act.",
+        "These crystals glow with a soft, internal light that reflects the stored essence.",
+        "Xylotian 'Crystal Readers' are sometimes consulted to interpret older Legacy Crystals.",
+        "The 'Hall of Ancestors' on Xylos displays many prominent Legacy Crystals.",
+        "The physical structure of the crystal must be flawless to hold the complex information.",
+        "A Legacy Crystal cannot be altered once the imbuing process is complete."
+      ],
+      "document_lengths_raw": [
+        144,
+        140,
+        71,
+        67,
+        80,
+        81,
+        86,
+        73,
+        87,
+        72
+      ],
+      "document_lengths": [
+        144,
+        140,
+        71,
+        67,
+        80,
+        81,
+        86,
+        73,
+        87,
+        72
+      ],
+      "attributions": {
+        "attention": [
+          0.52398681640625,
+          0.03676748275756836,
+          0.011182308197021484,
+          0.008025288581848145,
+          0.01203608512878418,
+          0.013805508613586426,
+          0.01406407356262207,
+          0.018524169921875,
+          0.02129673957824707,
+          0.12005233764648438
+        ]
+      },
+      "attributions_abs": {
+        "attention": [
+          0.52398681640625,
+          0.03676748275756836,
+          0.011182308197021484,
+          0.008025288581848145,
+          0.01203608512878418,
+          0.013805508613586426,
+          0.01406407356262207,
+          0.018524169921875,
+          0.02129673957824707,
+          0.12005233764648438
+        ]
+      },
+      "timings_seconds": {
+        "attention": 0.021291246637701988
+      },
+      "attention_top2_accuracy": false,
+      "attention_rank_A": 1,
+      "attention_rank_B": 3
+    }
+  ],
+  "aggregate_metrics": {
+    "attention": {
+      "top2_accuracy": 0.0,
+      "mean_rank_A": 1.0,
+      "mean_rank_B": 3.1,
+      "n_queries": 10
+    }
+  }
+}
