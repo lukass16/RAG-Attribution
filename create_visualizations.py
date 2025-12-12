@@ -1,371 +1,69 @@
 #!/usr/bin/env python3
 """
-Create visualizations for RAG Source Attribution Analysis
+Unified entry point for all visualization workflows.
 
-Generates:
-1. Architecture diagram
-2. Method comparison plots
-3. Results summary visualizations
-4. Ablation study plots
+Subcommands:
+- summary (default): multi-run summaries from *_full.json + metrics CSVs
+- run: per-run figures from a single *_full.json
+- extras: additional/report figures from metrics CSVs
+- all: run summary + extras (and run-level if --input provided)
 """
 
-import sys
-import os
-import json
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from pathlib import Path
-from typing import Dict, List, Optional
 import argparse
 
-# Set style with colorblind-friendly palette
-plt.style.use('seaborn-v0_8-darkgrid')
-# Use colorblind-friendly palette (works well for scientific visualizations)
-sns.set_palette("colorblind")
-# Set default font sizes for better readability
-plt.rcParams['font.size'] = 11
-plt.rcParams['axes.labelsize'] = 12
-plt.rcParams['axes.titlesize'] = 14
-plt.rcParams['xtick.labelsize'] = 10
-plt.rcParams['ytick.labelsize'] = 10
-plt.rcParams['legend.fontsize'] = 10
-plt.rcParams['figure.titlesize'] = 16
+from visualizations.summary import run_summary
+from visualizations.per_run import run_per_run
+from visualizations.extras import run_extras
 
-# Colorblind-friendly color palette for consistent use
-COLORS = {
-    'primary': '#0173B2',      # Blue
-    'secondary': '#DE8F05',   # Orange
-    'tertiary': '#029E73',     # Green
-    'quaternary': '#CC78BC',   # Purple
-    'accent': '#56B4E9',      # Light blue
-    'success': '#009E73',     # Green
-    'warning': '#F0E442',     # Yellow
-    'error': '#D55E00',       # Red-orange
-    'gold': '#E69F00',        # Gold
-    'red': '#D55E00',         # Red
-    'blue': '#0173B2',        # Blue
-}
 
-def format_method_name(method_name: str) -> str:
-    """Format method name for display (e.g., 'leave_one_out' -> 'Leave-One-Out')."""
-    name_map = {
-        'leave_one_out': 'Leave-One-Out',
-        'permutation_shapley': 'Permutation Shapley',
-        'monte_carlo_shapley': 'Monte Carlo Shapley',
-        'kernel_shap': 'Kernel SHAP',
-    }
-    return name_map.get(method_name, method_name.replace('_', ' ').title())
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Create visualizations for RAG attribution.")
+    subparsers = parser.add_subparsers(dest="command")
 
-def load_results(results_dir: str = "results", files: Optional[List[str]] = None) -> List[Dict]:
-    """Load result JSON files, either explicit paths or all *_full.json in a directory."""
-    results: List[Dict] = []
-    json_paths: List[Path] = []
-    if files:
-        for fp in files:
-            p = Path(fp)
-            if p.exists() and p.suffix == ".json":
-                json_paths.append(p)
-            else:
-                print(f"Skipping missing/non-json file: {fp}")
+    summary_p = subparsers.add_parser("summary", help="Create multi-run summary figures.")
+    summary_p.add_argument("--results-dir", type=str, default="results", help="Directory with *_full.json and metrics CSVs")
+    summary_p.add_argument("--files", nargs="*", default=None, help="Explicit list of *_full.json files")
+    summary_p.add_argument("--output-dir", type=str, default="figures", help="Output directory for figures")
+
+    run_p = subparsers.add_parser("run", help="Create per-run figures from a single *_full.json.")
+    run_p.add_argument("--input", required=True, help="Path to *_full.json")
+    run_p.add_argument("--output-dir", default="figures", help="Directory to write figures")
+
+    extras_p = subparsers.add_parser("extras", help="Create additional/report-focused figures.")
+    extras_p.add_argument("--results-dir", type=str, default="results", help="Directory with metrics CSVs")
+    extras_p.add_argument("--output-dir", type=str, default="figures", help="Output directory for figures")
+
+    all_p = subparsers.add_parser("all", help="Run summary + extras, and run-level if --input is given.")
+    all_p.add_argument("--results-dir", type=str, default="results", help="Directory with *_full.json and metrics CSVs")
+    all_p.add_argument("--files", nargs="*", default=None, help="Explicit list of *_full.json files")
+    all_p.add_argument("--input", help="Optional *_full.json for per-run figures")
+    all_p.add_argument("--output-dir", type=str, default="figures", help="Output directory for figures")
+
+    return parser
+
+
+def main():
+    parser = build_parser()
+    args = parser.parse_args()
+
+    cmd = args.command or "summary"
+    if cmd == "summary":
+        run_summary(results_dir=args.results_dir, files=args.files or [], output_dir=args.output_dir)
+    elif cmd == "run":
+        run_per_run(input_path=args.input, output_dir=args.output_dir)
+    elif cmd == "extras":
+        run_extras(results_dir=args.results_dir, output_dir=args.output_dir)
+    elif cmd == "all":
+        run_summary(results_dir=args.results_dir, files=args.files or [], output_dir=args.output_dir)
+        run_extras(results_dir=args.results_dir, output_dir=args.output_dir)
+        if args.input:
+            run_per_run(input_path=args.input, output_dir=args.output_dir)
     else:
-        results_path = Path(results_dir)
-        if not results_path.exists():
-            print(f"Results directory {results_dir} does not exist!")
-            return results
-        json_paths.extend(results_path.glob("*_full.json"))
-    for json_file in json_paths:
-        try:
-            with json_file.open("r") as f:
-                results.append(json.load(f))
-        except Exception as e:
-            print(f"Error reading {json_file}: {e}")
-    return results
+        parser.print_help()
 
 
-def infer_dataset_from_metrics_path(path: Path) -> str:
-    """Infer dataset name from metrics filename, e.g., 20_synergy_20251212_202138_metrics.csv -> 20_synergy."""
-    stem = path.stem.replace("_metrics", "")
-    parts = stem.split("_")
-    if len(parts) > 2:
-        return "_".join(parts[:-2])
-    return stem
-
-
-def load_metrics_frames(results_dir: str = "results") -> pd.DataFrame:
-    """Load all *_metrics.csv (and combined_metrics_*.csv if present) into a single DataFrame."""
-    metrics_path = Path(results_dir)
-    if not metrics_path.exists():
-        return pd.DataFrame()
-
-    frames = []
-    # Combined metrics first (already contains dataset)
-    for csv_file in metrics_path.glob("combined_metrics_*.csv"):
-        try:
-            df = pd.read_csv(csv_file)
-            frames.append(df)
-        except Exception as e:
-            print(f"Error reading {csv_file}: {e}")
-
-    # Per-run metrics without dataset column; infer from filename
-    for csv_file in metrics_path.glob("*_metrics.csv"):
-        if "combined_metrics_" in csv_file.name:
-            continue
-        try:
-            df = pd.read_csv(csv_file)
-            df["dataset"] = infer_dataset_from_metrics_path(csv_file)
-            frames.append(df)
-        except Exception as e:
-            print(f"Error reading {csv_file}: {e}")
-
-    if not frames:
-        return pd.DataFrame()
-
-    combined = pd.concat(frames, ignore_index=True, sort=False)
-    return combined
-
-def create_architecture_diagram(output_path: str = "figures/architecture.png"):
-    """Create architecture diagram with clean layout."""
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
-    fig, ax = plt.subplots(1, 1, figsize=(18, 10))
-    ax.axis('off')
-    
-    # Define components in a grid layout with colorblind-friendly colors
-    # Format: (x, y, color, width, height)
-    components = {
-        'Question\nQ': (2, 8, COLORS['accent'], 2.2, 1.0),
-        'Documents\nD = {d₁, ..., d_n}': (2, 5.5, COLORS['tertiary'], 2.2, 1.0),
-        'RAG System\n(LLM)': (6, 6.75, COLORS['warning'], 2.5, 1.2),
-        'Target Response\nR_target': (10.5, 8, COLORS['error'], 2.5, 1.0),
-        'Document Subsets\nS ⊆ D': (6, 4, COLORS['gold'], 2.5, 1.0),
-        'Utility Function\nv(S)': (10.5, 4, COLORS['quaternary'], 2.5, 1.0),
-        'Attribution\nMethods': (14.5, 6, COLORS['secondary'], 2.5, 1.2),
-        'Attribution\nScores φᵢ': (14.5, 2.5, COLORS['primary'], 2.5, 1.0),
-    }
-    
-    # Draw components
-    for name, (x, y, color, width, height) in components.items():
-        rect = plt.Rectangle((x-width/2, y-height/2), width, height, 
-                            facecolor=color, edgecolor='black', linewidth=2,
-                            zorder=3)
-        ax.add_patch(rect)
-        ax.text(x, y, name, ha='center', va='center', fontsize=10, 
-               fontweight='bold', zorder=4)
-    
-    # Draw arrows with clean routing - no overlaps
-    from matplotlib.patches import FancyArrowPatch
-    
-    # Arrow 1: Question to RAG System
-    arrow1 = FancyArrowPatch((3.1, 8), (4.75, 7.2),
-                            arrowstyle='->', mutation_scale=20, lw=2, 
-                            color='black', zorder=2)
-    ax.add_patch(arrow1)
-    
-    # Arrow 2: Documents to RAG System  
-    arrow2 = FancyArrowPatch((3.1, 5.5), (4.75, 6.3),
-                            arrowstyle='->', mutation_scale=20, lw=2,
-                            color='black', zorder=2)
-    ax.add_patch(arrow2)
-    
-    # Arrow 3: RAG System to Target Response
-    arrow3 = FancyArrowPatch((7.25, 7.2), (9.25, 8),
-                            arrowstyle='->', mutation_scale=20, lw=2,
-                            color='black', zorder=2)
-    ax.add_patch(arrow3)
-    ax.text(8.25, 7.8, 'Generate\nwith all docs', ha='center', va='center', fontsize=8,
-           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9, zorder=5))
-    
-    # Arrow 4: Documents to Document Subsets
-    arrow4 = FancyArrowPatch((3.1, 5.0), (4.75, 4),
-                            arrowstyle='->', mutation_scale=20, lw=2,
-                            color='black', zorder=2)
-    ax.add_patch(arrow4)
-    ax.text(3.5, 4.3, 'Sample\nsubsets', ha='center', va='center', fontsize=8,
-           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9, zorder=5))
-    
-    # Arrow 5: Document Subsets to Utility Function
-    arrow5 = FancyArrowPatch((7.25, 4), (9.25, 4),
-                            arrowstyle='->', mutation_scale=20, lw=2,
-                            color='black', zorder=2)
-    ax.add_patch(arrow5)
-    ax.text(8.25, 4.35, 'Compute', ha='center', va='center', fontsize=8,
-           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9, zorder=5))
-    
-    # Arrow 6: Target Response to Attribution Methods
-    arrow6 = FancyArrowPatch((11.75, 8), (13.25, 6.6),
-                            arrowstyle='->', mutation_scale=20, lw=2,
-                            color='black', zorder=2)
-    ax.add_patch(arrow6)
-    
-    # Arrow 7: Utility Function to Attribution Methods
-    arrow7 = FancyArrowPatch((11.75, 4), (13.25, 5.4),
-                            arrowstyle='->', mutation_scale=20, lw=2,
-                            color='black', zorder=2)
-    ax.add_patch(arrow7)
-    
-    # Arrow 8: Attribution Methods to Scores
-    arrow8 = FancyArrowPatch((14.5, 4.8), (14.5, 3.0),
-                            arrowstyle='->', mutation_scale=20, lw=2,
-                            color='black', zorder=2)
-    ax.add_patch(arrow8)
-    ax.text(14.9, 3.9, 'Rank', ha='left', va='center', fontsize=8,
-           bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9, zorder=5))
-    
-    # Add method labels in a box with better styling
-    methods_box = plt.Rectangle((13, 0.2), 3.5, 1.8, facecolor=COLORS['warning'], 
-                               edgecolor='black', linewidth=1.5, alpha=0.3, zorder=1)
-    ax.add_patch(methods_box)
-    ax.text(14.75, 1.7, 'Methods:', ha='center', fontsize=10, 
-           fontweight='bold', zorder=2)
-    methods = ['• Leave-One-Out', '• Permutation Shapley', 
-               '• Monte Carlo Shapley', '• Kernel SHAP']
-    for i, method in enumerate(methods):
-        ax.text(13.3, 1.3-i*0.25, method, fontsize=9, va='center', ha='left', 
-               zorder=2, fontweight='normal')
-    
-    # Add stage labels
-    ax.text(2, 9.5, '1. Input', ha='center', fontsize=11, fontweight='bold',
-           bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', alpha=0.5))
-    ax.text(6, 9.5, '2. Generation', ha='center', fontsize=11, fontweight='bold',
-           bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', alpha=0.5))
-    ax.text(10.5, 9.5, '3. Evaluation', ha='center', fontsize=11, fontweight='bold',
-           bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', alpha=0.5))
-    ax.text(14.5, 9.5, '4. Attribution', ha='center', fontsize=11, fontweight='bold',
-           bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', alpha=0.5))
-    
-    ax.set_xlim(0, 17)
-    ax.set_ylim(0, 10)
-    ax.set_title('RAG Source Attribution System Architecture', 
-                fontsize=18, fontweight='bold', pad=25)
-    
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    print(f"Saved architecture diagram to {output_path}")
-    plt.close()
-
-def plot_method_comparison(results: List[Dict], output_path: str = "figures/method_comparison.png"):
-    """Compare attribution methods across queries."""
-    if not results:
-        print("No results to plot!")
-        return
-    
-    # Aggregate metrics across all results
-    method_metrics = {}
-    
-    for result in results:
-        for method_name, metrics in result['aggregate_metrics'].items():
-            if method_name not in method_metrics:
-                method_metrics[method_name] = {
-                    'top2_acc': [],
-                    'rank_A': [],
-                    'rank_B': [],
-                    'n_queries': []
-                }
-            
-            if metrics['top2_accuracy'] is not None:
-                method_metrics[method_name]['top2_acc'].append(metrics['top2_accuracy'])
-            if metrics['mean_rank_A'] is not None:
-                method_metrics[method_name]['rank_A'].append(metrics['mean_rank_A'])
-            if metrics['mean_rank_B'] is not None:
-                method_metrics[method_name]['rank_B'].append(metrics['mean_rank_B'])
-    
-    if not method_metrics:
-        print("No metrics to plot!")
-        return
-    
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-    
-    methods = list(method_metrics.keys())
-    formatted_methods = [format_method_name(m) for m in methods]
-    x_pos = np.arange(len(methods))
-    
-    # Get colorblind-friendly colors
-    colors = sns.color_palette("colorblind", n_colors=len(methods))
-    
-    # Plot 1: Top-2 Accuracy
-    top2_accs = [np.mean(method_metrics[m]['top2_acc']) if method_metrics[m]['top2_acc'] 
-                 else 0 for m in methods]
-    top2_stds = [np.std(method_metrics[m]['top2_acc']) if method_metrics[m]['top2_acc'] 
-                 else 0 for m in methods]
-    
-    bars1 = axes[0].bar(x_pos, top2_accs, yerr=top2_stds, capsize=5, alpha=0.8, 
-                       color=colors, edgecolor='black', linewidth=1.2)
-    axes[0].set_xlabel('Attribution Method', fontweight='bold')
-    axes[0].set_ylabel('Top-2 Accuracy', fontweight='bold')
-    axes[0].set_title('Top-2 Accuracy by Method', fontweight='bold', pad=10)
-    axes[0].set_xticks(x_pos)
-    axes[0].set_xticklabels(formatted_methods, rotation=45, ha='right')
-    axes[0].set_ylim([0, 1.15])
-    axes[0].grid(axis='y', alpha=0.3, linestyle='--')
-    axes[0].spines['top'].set_visible(False)
-    axes[0].spines['right'].set_visible(False)
-    
-    # Add value labels on bars
-    for i, (acc, std) in enumerate(zip(top2_accs, top2_stds)):
-        height = acc + std + 0.02
-        axes[0].text(i, height, f'{acc:.3f}', ha='center', va='bottom', 
-                    fontsize=10, fontweight='bold')
-    
-    # Plot 2: Mean Rank of Document A
-    rank_A_means = [np.mean(method_metrics[m]['rank_A']) if method_metrics[m]['rank_A'] 
-                    else 0 for m in methods]
-    rank_A_stds = [np.std(method_metrics[m]['rank_A']) if method_metrics[m]['rank_A'] 
-                   else 0 for m in methods]
-    
-    bars2 = axes[1].bar(x_pos, rank_A_means, yerr=rank_A_stds, capsize=5, alpha=0.8,
-                       color=colors, edgecolor='black', linewidth=1.2)
-    axes[1].set_xlabel('Attribution Method', fontweight='bold')
-    axes[1].set_ylabel('Mean Rank of Document A', fontweight='bold')
-    axes[1].set_title('Mean Rank of Document A', fontweight='bold', pad=10)
-    axes[1].set_xticks(x_pos)
-    axes[1].set_xticklabels(formatted_methods, rotation=45, ha='right')
-    axes[1].axhline(y=1.5, color=COLORS['success'], linestyle='--', linewidth=2, 
-                   alpha=0.7, label='Ideal (1.5)', zorder=0)
-    axes[1].legend(loc='upper right', framealpha=0.9)
-    axes[1].grid(axis='y', alpha=0.3, linestyle='--')
-    axes[1].spines['top'].set_visible(False)
-    axes[1].spines['right'].set_visible(False)
-    axes[1].set_ylim([0.8, max(3.0, max(rank_A_means) + max(rank_A_stds) + 0.3)])
-    
-    # Add value labels
-    for i, (mean, std) in enumerate(zip(rank_A_means, rank_A_stds)):
-        height = mean + std + 0.1
-        axes[1].text(i, height, f'{mean:.2f}', ha='center', va='bottom',
-                    fontsize=10, fontweight='bold')
-    
-    # Plot 3: Mean Rank of Document B
-    rank_B_means = [np.mean(method_metrics[m]['rank_B']) if method_metrics[m]['rank_B'] 
-                    else 0 for m in methods]
-    rank_B_stds = [np.std(method_metrics[m]['rank_B']) if method_metrics[m]['rank_B'] 
-                   else 0 for m in methods]
-    
-    bars3 = axes[2].bar(x_pos, rank_B_means, yerr=rank_B_stds, capsize=5, alpha=0.8,
-                       color=colors, edgecolor='black', linewidth=1.2)
-    axes[2].set_xlabel('Attribution Method', fontweight='bold')
-    axes[2].set_ylabel('Mean Rank of Document B', fontweight='bold')
-    axes[2].set_title('Mean Rank of Document B', fontweight='bold', pad=10)
-    axes[2].set_xticks(x_pos)
-    axes[2].set_xticklabels(formatted_methods, rotation=45, ha='right')
-    axes[2].axhline(y=1.5, color=COLORS['success'], linestyle='--', linewidth=2,
-                   alpha=0.7, label='Ideal (1.5)', zorder=0)
-    axes[2].legend(loc='upper right', framealpha=0.9)
-    axes[2].grid(axis='y', alpha=0.3, linestyle='--')
-    axes[2].spines['top'].set_visible(False)
-    axes[2].spines['right'].set_visible(False)
-    axes[2].set_ylim([0.8, max(3.0, max(rank_B_means) + max(rank_B_stds) + 0.3)])
-    
-    # Add value labels
-    for i, (mean, std) in enumerate(zip(rank_B_means, rank_B_stds)):
-        height = mean + std + 0.1
-        axes[2].text(i, height, f'{mean:.2f}', ha='center', va='bottom',
-                    fontsize=10, fontweight='bold')
-    
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    print(f"Saved method comparison to {output_path}")
-    plt.close()
+if __name__ == "__main__":
+    main()
 
 
 def plot_dataset_summary(metrics_df: pd.DataFrame, output_path: str = "figures/dataset_method_summary.png"):
