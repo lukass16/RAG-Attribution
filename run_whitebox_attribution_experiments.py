@@ -381,9 +381,11 @@ def main():
     
     args = parser.parse_args()
     
-    # Auto-select eager attention if 'attention' method is requested
+    # Auto-select eager attention if 'attention' method is requested (or will be used by default)
     attn_impl = args.attn_implementation
-    if args.methods and 'attention' in args.methods and attn_impl is None:
+    # If methods not specified, default includes 'attention'; if specified, check if 'attention' is in list
+    uses_attention = (args.methods is None) or ('attention' in args.methods)
+    if uses_attention and attn_impl is None:
         print("Note: 'attention' method requires eager attention. Setting --attn-implementation=eager")
         attn_impl = 'eager'
     
