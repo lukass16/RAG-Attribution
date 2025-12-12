@@ -1,0 +1,10 @@
+dataset,method,top2_accuracy,mean_rank_A,mean_rank_B,n_queries,timestamp
+data/20_complementary.csv,leave_one_out,1.0,1.65,1.35,20,2025-12-12T21:56:43.775662
+data/20_complementary.csv,permutation_shapley,1.0,1.75,1.25,20,2025-12-12T21:56:43.775662
+data/20_complementary.csv,monte_carlo_shapley,0.95,1.8,1.25,20,2025-12-12T21:56:43.775662
+data/20_synergy.csv,leave_one_out,0.7,3.2,1.1,20,2025-12-12T22:05:01.248369
+data/20_synergy.csv,permutation_shapley,0.25,4.0,1.15,20,2025-12-12T22:05:01.248369
+data/20_synergy.csv,monte_carlo_shapley,0.3,3.55,1.05,20,2025-12-12T22:05:01.248369
+data/20_duplicate.csv,leave_one_out,0.7,1.15,3.1,20,2025-12-12T22:14:25.043482
+data/20_duplicate.csv,permutation_shapley,0.95,1.1,1.95,20,2025-12-12T22:14:25.043482
+data/20_duplicate.csv,monte_carlo_shapley,0.9,1.15,2.0,20,2025-12-12T22:14:25.043482

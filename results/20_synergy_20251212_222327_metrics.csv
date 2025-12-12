@@ -1,0 +1,4 @@
+method,top2_accuracy,mean_rank_A,mean_rank_B,n_queries
+leave_one_out,0.7,3.2,1.1,20
+permutation_shapley,0.35,3.55,1.1,20
+monte_carlo_shapley,0.2,3.8,1.1,20
