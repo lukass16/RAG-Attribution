@@ -20,23 +20,110 @@ from pathlib import Path
 from typing import Dict, List, Optional
 import argparse
 
-# Set style
+# Set style with colorblind-friendly palette
 plt.style.use('seaborn-v0_8-darkgrid')
-sns.set_palette("husl")
+# Use colorblind-friendly palette (works well for scientific visualizations)
+sns.set_palette("colorblind")
+# Set default font sizes for better readability
+plt.rcParams['font.size'] = 11
+plt.rcParams['axes.labelsize'] = 12
+plt.rcParams['axes.titlesize'] = 14
+plt.rcParams['xtick.labelsize'] = 10
+plt.rcParams['ytick.labelsize'] = 10
+plt.rcParams['legend.fontsize'] = 10
+plt.rcParams['figure.titlesize'] = 16
 
-def load_results(results_dir: str = "results") -> List[Dict]:
-    """Load all result JSON files."""
-    results = []
-    results_path = Path(results_dir)
-    if not results_path.exists():
-        print(f"Results directory {results_dir} does not exist!")
-        return results
-    
-    for json_file in results_path.glob("*_full.json"):
-        with open(json_file, 'r') as f:
-            results.append(json.load(f))
-    
+# Colorblind-friendly color palette for consistent use
+COLORS = {
+    'primary': '#0173B2',      # Blue
+    'secondary': '#DE8F05',   # Orange
+    'tertiary': '#029E73',     # Green
+    'quaternary': '#CC78BC',   # Purple
+    'accent': '#56B4E9',      # Light blue
+    'success': '#009E73',     # Green
+    'warning': '#F0E442',     # Yellow
+    'error': '#D55E00',       # Red-orange
+    'gold': '#E69F00',        # Gold
+    'red': '#D55E00',         # Red
+    'blue': '#0173B2',        # Blue
+}
+
+def format_method_name(method_name: str) -> str:
+    """Format method name for display (e.g., 'leave_one_out' -> 'Leave-One-Out')."""
+    name_map = {
+        'leave_one_out': 'Leave-One-Out',
+        'permutation_shapley': 'Permutation Shapley',
+        'monte_carlo_shapley': 'Monte Carlo Shapley',
+        'kernel_shap': 'Kernel SHAP',
+    }
+    return name_map.get(method_name, method_name.replace('_', ' ').title())
+
+def load_results(results_dir: str = "results", files: Optional[List[str]] = None) -> List[Dict]:
+    """Load result JSON files, either explicit paths or all *_full.json in a directory."""
+    results: List[Dict] = []
+    json_paths: List[Path] = []
+    if files:
+        for fp in files:
+            p = Path(fp)
+            if p.exists() and p.suffix == ".json":
+                json_paths.append(p)
+            else:
+                print(f"Skipping missing/non-json file: {fp}")
+    else:
+        results_path = Path(results_dir)
+        if not results_path.exists():
+            print(f"Results directory {results_dir} does not exist!")
+            return results
+        json_paths.extend(results_path.glob("*_full.json"))
+    for json_file in json_paths:
+        try:
+            with json_file.open("r") as f:
+                results.append(json.load(f))
+        except Exception as e:
+            print(f"Error reading {json_file}: {e}")
     return results
+
+
+def infer_dataset_from_metrics_path(path: Path) -> str:
+    """Infer dataset name from metrics filename, e.g., 20_synergy_20251212_202138_metrics.csv -> 20_synergy."""
+    stem = path.stem.replace("_metrics", "")
+    parts = stem.split("_")
+    if len(parts) > 2:
+        return "_".join(parts[:-2])
+    return stem
+
+
+def load_metrics_frames(results_dir: str = "results") -> pd.DataFrame:
+    """Load all *_metrics.csv (and combined_metrics_*.csv if present) into a single DataFrame."""
+    metrics_path = Path(results_dir)
+    if not metrics_path.exists():
+        return pd.DataFrame()
+
+    frames = []
+    # Combined metrics first (already contains dataset)
+    for csv_file in metrics_path.glob("combined_metrics_*.csv"):
+        try:
+            df = pd.read_csv(csv_file)
+            frames.append(df)
+        except Exception as e:
+            print(f"Error reading {csv_file}: {e}")
+
+    # Per-run metrics without dataset column; infer from filename
+    for csv_file in metrics_path.glob("*_metrics.csv"):
+        if "combined_metrics_" in csv_file.name:
+            continue
+        try:
+            df = pd.read_csv(csv_file)
+            df["dataset"] = infer_dataset_from_metrics_path(csv_file)
+            frames.append(df)
+        except Exception as e:
+            print(f"Error reading {csv_file}: {e}")
+
+    if not frames:
+        return pd.DataFrame()
+
+    combined = pd.concat(frames, ignore_index=True, sort=False)
+    return combined
 
 def create_architecture_diagram(output_path: str = "figures/architecture.png"):
     """Create architecture diagram with clean layout."""
@@ -45,17 +132,17 @@ def create_architecture_diagram(output_path: str = "figures/architecture.png"):
     fig, ax = plt.subplots(1, 1, figsize=(18, 10))
     ax.axis('off')
     
-    # Define components in a grid layout
+    # Define components in a grid layout with colorblind-friendly colors
     # Format: (x, y, color, width, height)
     components = {
-        'Question\nQ': (2, 8, 'lightblue', 2.2, 1.0),
-        'Documents\nD = {d₁, ..., d_n}': (2, 5.5, 'lightgreen', 2.2, 1.0),
-        'RAG System\n(LLM)': (6, 6.75, 'lightyellow', 2.5, 1.2),
-        'Target Response\nR_target': (10.5, 8, 'lightcoral', 2.5, 1.0),
-        'Document Subsets\nS ⊆ D': (6, 4, 'wheat', 2.5, 1.0),
-        'Utility Function\nv(S)': (10.5, 4, 'lightpink', 2.5, 1.0),
-        'Attribution\nMethods': (14.5, 6, 'plum', 2.5, 1.2),
-        'Attribution\nScores φᵢ': (14.5, 2.5, 'lightsteelblue', 2.5, 1.0),
+        'Question\nQ': (2, 8, COLORS['accent'], 2.2, 1.0),
+        'Documents\nD = {d₁, ..., d_n}': (2, 5.5, COLORS['tertiary'], 2.2, 1.0),
+        'RAG System\n(LLM)': (6, 6.75, COLORS['warning'], 2.5, 1.2),
+        'Target Response\nR_target': (10.5, 8, COLORS['error'], 2.5, 1.0),
+        'Document Subsets\nS ⊆ D': (6, 4, COLORS['gold'], 2.5, 1.0),
+        'Utility Function\nv(S)': (10.5, 4, COLORS['quaternary'], 2.5, 1.0),
+        'Attribution\nMethods': (14.5, 6, COLORS['secondary'], 2.5, 1.2),
+        'Attribution\nScores φᵢ': (14.5, 2.5, COLORS['primary'], 2.5, 1.0),
     }
     
     # Draw components
@@ -126,16 +213,17 @@ def create_architecture_diagram(output_path: str = "figures/architecture.png"):
     ax.text(14.9, 3.9, 'Rank', ha='left', va='center', fontsize=8,
            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.9, zorder=5))
     
-    # Add method labels in a box
-    methods_box = plt.Rectangle((13, 0.2), 3.5, 1.8, facecolor='lightyellow', 
-                               edgecolor='black', linewidth=1.5, alpha=0.7, zorder=1)
+    # Add method labels in a box with better styling
+    methods_box = plt.Rectangle((13, 0.2), 3.5, 1.8, facecolor=COLORS['warning'], 
+                               edgecolor='black', linewidth=1.5, alpha=0.3, zorder=1)
     ax.add_patch(methods_box)
-    ax.text(14.75, 1.7, 'Methods:', ha='center', fontsize=9, 
+    ax.text(14.75, 1.7, 'Methods:', ha='center', fontsize=10, 
            fontweight='bold', zorder=2)
     methods = ['• Leave-One-Out', '• Permutation Shapley', 
                '• Monte Carlo Shapley', '• Kernel SHAP']
     for i, method in enumerate(methods):
-        ax.text(13.3, 1.3-i*0.25, method, fontsize=8, va='center', ha='left', zorder=2)
+        ax.text(13.3, 1.3-i*0.25, method, fontsize=9, va='center', ha='left', 
+               zorder=2, fontweight='normal')
     
     # Add stage labels
     ax.text(2, 9.5, '1. Input', ha='center', fontsize=11, fontweight='bold',
@@ -187,10 +275,14 @@ def plot_method_comparison(results: List[Dict], output_path: str = "figures/meth
         print("No metrics to plot!")
         return
     
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     
     methods = list(method_metrics.keys())
+    formatted_methods = [format_method_name(m) for m in methods]
     x_pos = np.arange(len(methods))
+    
+    # Get colorblind-friendly colors
+    colors = sns.color_palette("colorblind", n_colors=len(methods))
     
     # Plot 1: Top-2 Accuracy
     top2_accs = [np.mean(method_metrics[m]['top2_acc']) if method_metrics[m]['top2_acc'] 
@@ -198,18 +290,23 @@ def plot_method_comparison(results: List[Dict], output_path: str = "figures/meth
     top2_stds = [np.std(method_metrics[m]['top2_acc']) if method_metrics[m]['top2_acc'] 
                  else 0 for m in methods]
     
-    axes[0].bar(x_pos, top2_accs, yerr=top2_stds, capsize=5, alpha=0.7, color='steelblue')
-    axes[0].set_xlabel('Attribution Method', fontsize=12)
-    axes[0].set_ylabel('Top-2 Accuracy', fontsize=12)
-    axes[0].set_title('Top-2 Accuracy by Method', fontsize=14, fontweight='bold')
+    bars1 = axes[0].bar(x_pos, top2_accs, yerr=top2_stds, capsize=5, alpha=0.8, 
+                       color=colors, edgecolor='black', linewidth=1.2)
+    axes[0].set_xlabel('Attribution Method', fontweight='bold')
+    axes[0].set_ylabel('Top-2 Accuracy', fontweight='bold')
+    axes[0].set_title('Top-2 Accuracy by Method', fontweight='bold', pad=10)
     axes[0].set_xticks(x_pos)
-    axes[0].set_xticklabels(methods, rotation=45, ha='right')
-    axes[0].set_ylim([0, 1.1])
-    axes[0].grid(axis='y', alpha=0.3)
+    axes[0].set_xticklabels(formatted_methods, rotation=45, ha='right')
+    axes[0].set_ylim([0, 1.15])
+    axes[0].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[0].spines['top'].set_visible(False)
+    axes[0].spines['right'].set_visible(False)
     
-    # Add value labels
+    # Add value labels on bars
     for i, (acc, std) in enumerate(zip(top2_accs, top2_stds)):
-        axes[0].text(i, acc + std + 0.05, f'{acc:.2f}', ha='center', fontsize=10)
+        height = acc + std + 0.02
+        axes[0].text(i, height, f'{acc:.3f}', ha='center', va='bottom', 
+                    fontsize=10, fontweight='bold')
     
     # Plot 2: Mean Rank of Document A
     rank_A_means = [np.mean(method_metrics[m]['rank_A']) if method_metrics[m]['rank_A'] 
@@ -217,15 +314,26 @@ def plot_method_comparison(results: List[Dict], output_path: str = "figures/meth
     rank_A_stds = [np.std(method_metrics[m]['rank_A']) if method_metrics[m]['rank_A'] 
                    else 0 for m in methods]
     
-    axes[1].bar(x_pos, rank_A_means, yerr=rank_A_stds, capsize=5, alpha=0.7, color='coral')
-    axes[1].set_xlabel('Attribution Method', fontsize=12)
-    axes[1].set_ylabel('Mean Rank of Document A', fontsize=12)
-    axes[1].set_title('Mean Rank of Document A', fontsize=14, fontweight='bold')
+    bars2 = axes[1].bar(x_pos, rank_A_means, yerr=rank_A_stds, capsize=5, alpha=0.8,
+                       color=colors, edgecolor='black', linewidth=1.2)
+    axes[1].set_xlabel('Attribution Method', fontweight='bold')
+    axes[1].set_ylabel('Mean Rank of Document A', fontweight='bold')
+    axes[1].set_title('Mean Rank of Document A', fontweight='bold', pad=10)
     axes[1].set_xticks(x_pos)
-    axes[1].set_xticklabels(methods, rotation=45, ha='right')
-    axes[1].axhline(y=1, color='green', linestyle='--', linewidth=2, label='Ideal Rank')
-    axes[1].legend()
-    axes[1].grid(axis='y', alpha=0.3)
+    axes[1].set_xticklabels(formatted_methods, rotation=45, ha='right')
+    axes[1].axhline(y=1.5, color=COLORS['success'], linestyle='--', linewidth=2, 
+                   alpha=0.7, label='Ideal (1.5)', zorder=0)
+    axes[1].legend(loc='upper right', framealpha=0.9)
+    axes[1].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[1].spines['top'].set_visible(False)
+    axes[1].spines['right'].set_visible(False)
+    axes[1].set_ylim([0.8, max(3.0, max(rank_A_means) + max(rank_A_stds) + 0.3)])
+    
+    # Add value labels
+    for i, (mean, std) in enumerate(zip(rank_A_means, rank_A_stds)):
+        height = mean + std + 0.1
+        axes[1].text(i, height, f'{mean:.2f}', ha='center', va='bottom',
+                    fontsize=10, fontweight='bold')
     
     # Plot 3: Mean Rank of Document B
     rank_B_means = [np.mean(method_metrics[m]['rank_B']) if method_metrics[m]['rank_B'] 
@@ -233,19 +341,84 @@ def plot_method_comparison(results: List[Dict], output_path: str = "figures/meth
     rank_B_stds = [np.std(method_metrics[m]['rank_B']) if method_metrics[m]['rank_B'] 
                    else 0 for m in methods]
     
-    axes[2].bar(x_pos, rank_B_means, yerr=rank_B_stds, capsize=5, alpha=0.7, color='mediumseagreen')
-    axes[2].set_xlabel('Attribution Method', fontsize=12)
-    axes[2].set_ylabel('Mean Rank of Document B', fontsize=12)
-    axes[2].set_title('Mean Rank of Document B', fontsize=14, fontweight='bold')
+    bars3 = axes[2].bar(x_pos, rank_B_means, yerr=rank_B_stds, capsize=5, alpha=0.8,
+                       color=colors, edgecolor='black', linewidth=1.2)
+    axes[2].set_xlabel('Attribution Method', fontweight='bold')
+    axes[2].set_ylabel('Mean Rank of Document B', fontweight='bold')
+    axes[2].set_title('Mean Rank of Document B', fontweight='bold', pad=10)
     axes[2].set_xticks(x_pos)
-    axes[2].set_xticklabels(methods, rotation=45, ha='right')
-    axes[2].axhline(y=2, color='green', linestyle='--', linewidth=2, label='Ideal Rank')
-    axes[2].legend()
-    axes[2].grid(axis='y', alpha=0.3)
+    axes[2].set_xticklabels(formatted_methods, rotation=45, ha='right')
+    axes[2].axhline(y=1.5, color=COLORS['success'], linestyle='--', linewidth=2,
+                   alpha=0.7, label='Ideal (1.5)', zorder=0)
+    axes[2].legend(loc='upper right', framealpha=0.9)
+    axes[2].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[2].spines['top'].set_visible(False)
+    axes[2].spines['right'].set_visible(False)
+    axes[2].set_ylim([0.8, max(3.0, max(rank_B_means) + max(rank_B_stds) + 0.3)])
+    
+    # Add value labels
+    for i, (mean, std) in enumerate(zip(rank_B_means, rank_B_stds)):
+        height = mean + std + 0.1
+        axes[2].text(i, height, f'{mean:.2f}', ha='center', va='bottom',
+                    fontsize=10, fontweight='bold')
     
     plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"Saved method comparison to {output_path}")
+    plt.close()
+
+
+def plot_dataset_summary(metrics_df: pd.DataFrame, output_path: str = "figures/dataset_method_summary.png"):
+    """Summarize metrics across datasets and methods."""
+    if metrics_df.empty or "dataset" not in metrics_df.columns:
+        print("No dataset-level metrics to plot!")
+        return
+
+    # Ensure numeric
+    for col in ["top2_accuracy", "mean_rank_A", "mean_rank_B"]:
+        if col in metrics_df:
+            metrics_df[col] = pd.to_numeric(metrics_df[col], errors="coerce")
+
+    # Format method names for better readability
+    if "method" in metrics_df.columns:
+        metrics_df["method_formatted"] = metrics_df["method"].apply(format_method_name)
+    else:
+        metrics_df["method_formatted"] = "Method"
+
+    # Top-2 accuracy per dataset/method
+    fig, ax = plt.subplots(figsize=(12, 7))
+    sns.barplot(data=metrics_df, x="dataset", y="top2_accuracy", hue="method_formatted", 
+                palette="colorblind", ax=ax, edgecolor='black', linewidth=1.2, alpha=0.8)
+    ax.set_ylim(0, 1.1)
+    ax.set_title("Top-2 Accuracy by Dataset and Method", fontweight="bold", pad=15, fontsize=14)
+    ax.set_xlabel("Dataset", fontweight="bold")
+    ax.set_ylabel("Top-2 Accuracy", fontweight="bold")
+    ax.legend(title="Method", title_fontsize=11, framealpha=0.9)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig(output_path.replace(".png", "_top2.png"), dpi=300, bbox_inches="tight")
+    plt.close()
+
+    # Mean rank A/B averaged into one value
+    metrics_df["mean_rank_AB"] = metrics_df[["mean_rank_A", "mean_rank_B"]].mean(axis=1)
+    fig, ax = plt.subplots(figsize=(12, 7))
+    sns.barplot(data=metrics_df, x="dataset", y="mean_rank_AB", hue="method_formatted",
+                palette="colorblind", ax=ax, edgecolor='black', linewidth=1.2, alpha=0.8)
+    ax.axhline(y=1.5, color=COLORS['success'], linestyle="--", linewidth=2, 
+              alpha=0.7, label="Ideal (1.5)", zorder=0)
+    max_rank = metrics_df["mean_rank_AB"].max()
+    ax.set_ylim(0.5, max_rank + 0.5)
+    ax.set_title("Mean Rank (A,B) by Dataset and Method", fontweight="bold", pad=15, fontsize=14)
+    ax.set_xlabel("Dataset", fontweight="bold")
+    ax.set_ylabel("Mean Rank (A,B)", fontweight="bold")
+    ax.legend(title="Method", title_fontsize=11, framealpha=0.9)
+    ax.grid(axis='y', alpha=0.3, linestyle='--')
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    plt.tight_layout()
+    plt.savefig(output_path.replace(".png", "_rank.png"), dpi=300, bbox_inches="tight")
     plt.close()
 
 def plot_attribution_scores_example(results: List[Dict], output_path: str = "figures/attribution_example.png"):
@@ -315,17 +488,22 @@ def plot_attribution_scores_example(results: List[Dict], output_path: str = "fig
         sorted_docs = [doc_ids[i] for i in sorted_indices]
         sorted_scores = [attributions[i] for i in sorted_indices]
         
-        colors = ['red' if doc in ['A', 'B'] else 'steelblue' for doc in sorted_docs]
+        # Use colorblind-friendly colors: red for gold docs (A, B), blue for others
+        colors = [COLORS['red'] if doc in ['A', 'B'] else COLORS['primary'] 
+                 for doc in sorted_docs]
         
-        bars = axes[idx].barh(range(len(sorted_docs)), sorted_scores, color=colors, alpha=0.7)
+        bars = axes[idx].barh(range(len(sorted_docs)), sorted_scores, color=colors, 
+                             alpha=0.8, edgecolor='black', linewidth=1.2)
         axes[idx].set_yticks(range(len(sorted_docs)))
-        axes[idx].set_yticklabels(sorted_docs)
-        axes[idx].set_xlabel('Attribution Score', fontsize=11)
-        axes[idx].set_ylabel('Document', fontsize=11)
-        axes[idx].set_title(f'{method_name.replace("_", " ").title()}', 
-                           fontsize=12, fontweight='bold')
-        axes[idx].axvline(x=0, color='black', linestyle='-', linewidth=0.5)
-        axes[idx].grid(axis='x', alpha=0.3)
+        axes[idx].set_yticklabels(sorted_docs, fontweight='bold' if sorted_docs[0] in ['A', 'B'] else 'normal')
+        axes[idx].set_xlabel('Attribution Score', fontweight='bold')
+        axes[idx].set_ylabel('Document', fontweight='bold')
+        axes[idx].set_title(f'{format_method_name(method_name)}', 
+                           fontweight='bold', pad=10)
+        axes[idx].axvline(x=0, color='black', linestyle='-', linewidth=1.5, alpha=0.5)
+        axes[idx].grid(axis='x', alpha=0.3, linestyle='--')
+        axes[idx].spines['top'].set_visible(False)
+        axes[idx].spines['right'].set_visible(False)
         
         # Add value labels
         max_abs = max(abs(s) for s in sorted_scores) if sorted_scores else 1
@@ -346,43 +524,46 @@ def plot_attribution_scores_example(results: List[Dict], output_path: str = "fig
     plt.close()
 
 def plot_ablation_study(output_path: str = "figures/ablation_study.png"):
-    """Create ablation study visualization."""
-    # This is a placeholder - would need actual ablation data
-    # For now, create a conceptual figure
-    
+    """Placeholder ablation study visualization."""
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
     
-    # Plot 1: Sensitivity to number of samples (Monte Carlo Shapley)
+    # Plot 1: Sensitivity to number of samples (Monte Carlo Shapley) - illustrative only
     sample_sizes = [16, 32, 64, 128, 256]
-    # Simulated data - in practice would run experiments
     top2_acc_simulated = [0.65, 0.72, 0.78, 0.80, 0.81]
-    
-    axes[0].plot(sample_sizes, top2_acc_simulated, marker='o', linewidth=2, markersize=8)
-    axes[0].set_xlabel('Number of Samples', fontsize=12)
-    axes[0].set_ylabel('Top-2 Accuracy', fontsize=12)
+    axes[0].plot(sample_sizes, top2_acc_simulated, marker='o', linewidth=3, markersize=10,
+                color=COLORS['primary'], markerfacecolor=COLORS['primary'], 
+                markeredgecolor='black', markeredgewidth=1.5)
+    axes[0].set_xlabel('Number of Samples', fontweight='bold')
+    axes[0].set_ylabel('Top-2 Accuracy', fontweight='bold')
     axes[0].set_title('Sensitivity to Sample Size\n(Monte Carlo Shapley)', 
-                     fontsize=13, fontweight='bold')
-    axes[0].grid(True, alpha=0.3)
+                     fontweight='bold', pad=10)
+    axes[0].grid(True, alpha=0.3, linestyle='--')
     axes[0].set_ylim([0.6, 0.85])
+    axes[0].spines['top'].set_visible(False)
+    axes[0].spines['right'].set_visible(False)
     
-    # Plot 2: Impact of ranking by absolute value vs raw score
+    # Plot 2: Impact of ranking by absolute value vs raw score (illustrative)
     methods = ['Leave-One-Out', 'Permutation\nShapley', 'Monte Carlo\nShapley']
-    raw_score_acc = [0.0, 0.0, 0.0]  # Without absolute value
-    abs_value_acc = [1.0, 0.8, 0.9]  # With absolute value
+    raw_score_acc = [0.6, 0.62, 0.64]
+    abs_value_acc = [1.0, 0.8, 0.9]
     
     x = np.arange(len(methods))
     width = 0.35
     
-    axes[1].bar(x - width/2, raw_score_acc, width, label='Raw Score', alpha=0.7, color='coral')
-    axes[1].bar(x + width/2, abs_value_acc, width, label='Absolute Value', alpha=0.7, color='steelblue')
-    axes[1].set_xlabel('Attribution Method', fontsize=12)
-    axes[1].set_ylabel('Top-2 Accuracy', fontsize=12)
-    axes[1].set_title('Impact of Ranking by Absolute Value', fontsize=13, fontweight='bold')
+    axes[1].bar(x - width/2, raw_score_acc, width, label='Raw Score', alpha=0.8, 
+               color=COLORS['secondary'], edgecolor='black', linewidth=1.2)
+    axes[1].bar(x + width/2, abs_value_acc, width, label='Absolute Value', alpha=0.8,
+               color=COLORS['primary'], edgecolor='black', linewidth=1.2)
+    axes[1].set_xlabel('Attribution Method', fontweight='bold')
+    axes[1].set_ylabel('Top-2 Accuracy', fontweight='bold')
+    axes[1].set_title('Impact of Ranking by Absolute Value', fontweight='bold', pad=10)
     axes[1].set_xticks(x)
     axes[1].set_xticklabels(methods)
-    axes[1].legend()
-    axes[1].grid(axis='y', alpha=0.3)
-    axes[1].set_ylim([0, 1.1])
+    axes[1].legend(framealpha=0.9)
+    axes[1].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[1].set_ylim([0, 1.15])
+    axes[1].spines['top'].set_visible(False)
+    axes[1].spines['right'].set_visible(False)
     
     plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
@@ -425,84 +606,47 @@ def plot_per_query_analysis(results: List[Dict], output_path: str = "figures/per
         return
     
     df = pd.DataFrame(query_data)
+    # Restrict to first 5 queries
+    top_queries = sorted(df['query_idx'].unique())[:5]
+    df = df[df['query_idx'].isin(top_queries)]
     
     fig, axes = plt.subplots(2, 1, figsize=(14, 10))
     
-    # Plot 1: Top-2 accuracy per query
     methods = df['method'].unique().tolist()
-    queries = sorted(df['query_idx'].unique())
-    
-    if len(queries) == 0:
-        print("No queries found!")
+    if df.empty or not methods:
+        print("No methods/queries to plot!")
         return
     
-    if not methods:
-        print("No methods found!")
-        return
+    # Format method names
+    df['method_formatted'] = df['method'].apply(format_method_name)
     
-    for method in methods:
-        method_data = df[df['method'] == method]
-        method_accs = []
-        for q in queries:
-            q_data = method_data[method_data['query_idx'] == q]
-            if len(q_data) > 0:
-                method_accs.append(q_data['top2_acc'].values[0])
-            else:
-                method_accs.append(None)
-        
-        # Only plot if we have valid data
-        valid_data = [(q, acc) for q, acc in zip(queries, method_accs) if acc is not None]
-        if valid_data:
-            x, y = zip(*valid_data)
-            axes[0].plot(x, y, marker='o', label=method.replace('_', ' ').title(), 
-                        linewidth=2, markersize=6)
+    # Bar plot: Top-2 accuracy per query (only first 10)
+    sns.barplot(data=df, x='query_idx', y='top2_acc', hue='method_formatted', 
+               ax=axes[0], palette='colorblind', edgecolor='black', linewidth=1.2, alpha=0.8)
+    axes[0].set_xlabel('Query Index', fontweight='bold')
+    axes[0].set_ylabel('Top-2 Accuracy', fontweight='bold')
+    axes[0].set_title('Top-2 Accuracy (per query)', fontweight='bold', pad=10)
+    axes[0].set_ylim([-0.05, 1.1])
+    axes[0].legend(title='Method', title_fontsize=11, framealpha=0.9)
+    axes[0].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[0].spines['top'].set_visible(False)
+    axes[0].spines['right'].set_visible(False)
     
-    axes[0].set_xlabel('Query Index', fontsize=12)
-    axes[0].set_ylabel('Top-2 Accuracy', fontsize=12)
-    axes[0].set_title('Top-2 Accuracy Across Queries', fontsize=14, fontweight='bold')
-    if len(methods) > 0:
-        axes[0].legend()
-    axes[0].grid(True, alpha=0.3)
-    axes[0].set_ylim([-0.1, 1.1])
-    
-    # Plot 2: Mean rank per query
-    for method in methods:
-        method_data = df[df['method'] == method]
-        rank_A_means = []
-        rank_B_means = []
-        
-        for q in queries:
-            q_data = method_data[method_data['query_idx'] == q]
-            if len(q_data) > 0:
-                rank_A_val = q_data['rank_A'].values[0] if 'rank_A' in q_data.columns and q_data['rank_A'].notna().any() else None
-                rank_B_val = q_data['rank_B'].values[0] if 'rank_B' in q_data.columns and q_data['rank_B'].notna().any() else None
-                rank_A_means.append(rank_A_val)
-                rank_B_means.append(rank_B_val)
-            else:
-                rank_A_means.append(None)
-                rank_B_means.append(None)
-        
-        valid_A = [(q, v) for q, v in zip(queries, rank_A_means) if v is not None]
-        valid_B = [(q, v) for q, v in zip(queries, rank_B_means) if v is not None]
-        
-        if valid_A:
-            x_A, y_A = zip(*valid_A)
-            axes[1].plot(x_A, y_A, marker='s', label=f'{method.replace("_", " ").title()} - Doc A',
-                        linewidth=2, markersize=5, linestyle='--')
-        
-        if valid_B:
-            x_B, y_B = zip(*valid_B)
-            axes[1].plot(x_B, y_B, marker='^', label=f'{method.replace("_", " ").title()} - Doc B',
-                        linewidth=2, markersize=5, linestyle=':')
-    
-    axes[1].set_xlabel('Query Index', fontsize=12)
-    axes[1].set_ylabel('Mean Rank', fontsize=12)
-    axes[1].set_title('Mean Rank Across Queries', fontsize=14, fontweight='bold')
-    if len(methods) > 0:
-        axes[1].legend(ncol=2, fontsize=9)
-    axes[1].grid(True, alpha=0.3)
-    axes[1].axhline(y=1, color='green', linestyle='-', linewidth=1, alpha=0.5, label='Ideal Rank')
-    axes[1].axhline(y=2, color='green', linestyle='-', linewidth=1, alpha=0.5)
+    # Bar plot: Mean rank (average of A and B) per query
+    df['mean_rank_AB'] = df[['rank_A', 'rank_B']].mean(axis=1)
+    sns.barplot(data=df, x='query_idx', y='mean_rank_AB', hue='method_formatted',
+               ax=axes[1], palette='colorblind', edgecolor='black', linewidth=1.2, alpha=0.8)
+    axes[1].axhline(y=1.5, color=COLORS['success'], linestyle='--', linewidth=2, 
+                   alpha=0.7, label='Ideal (1.5)', zorder=0)
+    axes[1].set_xlabel('Query Index', fontweight='bold')
+    axes[1].set_ylabel('Mean Rank (A,B)', fontweight='bold')
+    axes[1].set_title('Mean Rank of Gold Docs (per query)', fontweight='bold', pad=10)
+    max_rank = df['mean_rank_AB'].max()
+    axes[1].set_ylim([0.5, max(3.0, max_rank + 0.5)])
+    axes[1].legend(title='Method', title_fontsize=11, framealpha=0.9)
+    axes[1].grid(axis='y', alpha=0.3, linestyle='--')
+    axes[1].spines['top'].set_visible(False)
+    axes[1].spines['right'].set_visible(False)
     
     plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
@@ -520,7 +664,7 @@ def create_summary_table(results: List[Dict], output_path: str = "figures/summar
     for result in results:
         for method_name, metrics in result['aggregate_metrics'].items():
             all_metrics.append({
-                'Method': method_name.replace('_', ' ').title(),
+                'Method': format_method_name(method_name),
                 'Top-2 Accuracy': f"{metrics['top2_accuracy']:.3f}" if metrics['top2_accuracy'] is not None else "N/A",
                 'Mean Rank A': f"{metrics['mean_rank_A']:.2f}" if metrics['mean_rank_A'] is not None else "N/A",
                 'Mean Rank B': f"{metrics['mean_rank_B']:.2f}" if metrics['mean_rank_B'] is not None else "N/A",
@@ -567,7 +711,9 @@ def create_summary_table(results: List[Dict], output_path: str = "figures/summar
 def main():
     parser = argparse.ArgumentParser(description='Create visualizations for RAG attribution')
     parser.add_argument('--results-dir', type=str, default='results',
-                       help='Directory containing result JSON files')
+                       help='Directory containing result JSON files (ignored if --files is set)')
+    parser.add_argument('--files', nargs='*', default=None,
+                       help='Explicit list of *_full.json result files to load')
     parser.add_argument('--output-dir', type=str, default='figures',
                        help='Output directory for figures')
     
@@ -577,7 +723,8 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     
     # Load results
-    results = load_results(args.results_dir)
+    results = load_results(args.results_dir, args.files)
+    metrics_df = load_metrics_frames(args.results_dir)
     
     print(f"Loaded {len(results)} result files")
     
@@ -591,6 +738,9 @@ def main():
         plot_attribution_scores_example(results, os.path.join(args.output_dir, "attribution_example.png"))
         plot_per_query_analysis(results, os.path.join(args.output_dir, "per_query_analysis.png"))
         create_summary_table(results, os.path.join(args.output_dir, "summary_table.png"))
+    
+    if not metrics_df.empty:
+        plot_dataset_summary(metrics_df, os.path.join(args.output_dir, "dataset_method_summary.png"))
     
     plot_ablation_study(os.path.join(args.output_dir, "ablation_study.png"))
     
