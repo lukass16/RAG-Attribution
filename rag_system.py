@@ -103,7 +103,14 @@ class RAGSystem:
     RAG System for generating responses and computing utilities.
     """
     
-    def __init__(self, model_name: str = "meta-llama/Llama-3.2-1B", device: Optional[str] = None, token: Optional[str] = None):
+    def __init__(
+        self,
+        model_name: str = "meta-llama/Llama-3.2-1B",
+        device: Optional[str] = None,
+        token: Optional[str] = None,
+        max_input_tokens: Optional[int] = None,
+        max_doc_tokens: Optional[int] = None
+    ):
         """
         Initialize RAG system with LLM model.
         
@@ -114,6 +121,8 @@ class RAGSystem:
         """
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.model_name = model_name
+        self.max_input_tokens = max_input_tokens
+        self.max_doc_tokens = max_doc_tokens
         
         # Get token from parameter or environment variable
         hf_token = token or os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
@@ -124,6 +133,9 @@ class RAGSystem:
             token=hf_token
         )
         self.tokenizer.pad_token = self.tokenizer.eos_token
+        # If not provided, default to model's advertised max length
+        if self.max_input_tokens is None:
+            self.max_input_tokens = getattr(self.tokenizer, "model_max_length", 2048)
         
         print(f"Loading model...")
         self.model = AutoModelForCausalLM.from_pretrained(
@@ -140,6 +152,35 @@ class RAGSystem:
         self.model.eval()
         print(f"Model loaded successfully on {self.device}")
     
+    def _tokenize_with_truncation(self, text: str):
+        """
+        Tokenize with an explicit max length and truncation to avoid over-length inputs.
+        """
+        return self.tokenizer(
+            text,
+            return_tensors="pt",
+            max_length=self.max_input_tokens,
+            truncation=True
+        ).to(self.device)
+    
+    def truncate_documents(self, documents: List[str]) -> List[str]:
+        """
+        Truncate individual documents to max_doc_tokens if configured.
+        """
+        if not self.max_doc_tokens:
+            return documents
+        
+        truncated = []
+        for doc in documents:
+            token_ids = self.tokenizer.encode(
+                doc,
+                add_special_tokens=False,
+                max_length=self.max_doc_tokens,
+                truncation=True
+            )
+            truncated.append(self.tokenizer.decode(token_ids, skip_special_tokens=True))
+        return truncated
+    
     def format_prompt(self, question: str, documents: List[str]) -> str:
         """
         Format prompt with context and question.
@@ -151,7 +192,8 @@ class RAGSystem:
         Returns:
             Formatted prompt string
         """
-        context = "\n\n".join(documents)
+        docs = self.truncate_documents(documents)
+        context = "\n\n".join(docs)
         prompt = f"Context: {context}\n\nQuestion: {question}\n\nAnswer:"
         return prompt
     
@@ -178,7 +220,7 @@ class RAGSystem:
         """
         prompt = self.format_prompt(question, documents)
         
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+        inputs = self._tokenize_with_truncation(prompt)
         
         # Create attention mask explicitly to avoid warnings
         attention_mask = inputs.get("attention_mask", None)
@@ -247,41 +289,47 @@ class RAGSystem:
         Returns:
             Sum of log probabilities for all tokens in target_text
         """
-        # Tokenize prompt
-        prompt_inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+        # Tokenize prompt to locate where target tokens start
+        prompt_inputs = self._tokenize_with_truncation(prompt)
         prompt_length = prompt_inputs["input_ids"].shape[1]
-        
-        # Tokenize full text (prompt + target)
+
+        # Tokenize full text (prompt + target) with attention mask
         full_text = prompt + " " + target_text
-        full_inputs = self.tokenizer(full_text, return_tensors="pt").to(self.device)
-        
-        # Get target token IDs
-        target_ids = full_inputs["input_ids"][0][prompt_length:]
-        
-        if len(target_ids) == 0:
+        full_inputs = self._tokenize_with_truncation(full_text)
+        input_ids = full_inputs["input_ids"]
+        attention_mask = full_inputs.get("attention_mask", torch.ones_like(input_ids))
+
+        seq_len = input_ids.shape[1]
+        # Clip prompt length in case truncation cut into the prompt tokens
+        prompt_length = min(prompt_length, seq_len)
+        if seq_len <= prompt_length:
             return 0.0
-        
-        # Forward pass to get logits
+
+        # Forward pass with attention mask
         with torch.no_grad():
-            outputs = self.model(full_inputs["input_ids"])
-            logits = outputs.logits
-        
-        # Compute log probabilities for each target token
-        log_probs = []
-        for i, token_id in enumerate(target_ids):
-            # Get logits for this position (the position where this token is predicted)
-            pos_idx = prompt_length + i
-            if pos_idx >= logits.shape[1]:
-                break
-            
-            token_logits = logits[0, pos_idx, :]
-            log_probs_token = torch.nn.functional.log_softmax(token_logits, dim=-1)
-            log_prob = log_probs_token[token_id].item()
-            log_probs.append(log_prob)
-        
-        # Sum log probabilities
-        total_log_prob = sum(log_probs)
-        
+            outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+            logits = outputs.logits  # [1, seq_len, vocab]
+
+        # Shift for causal LM: logits predict the next token
+        logits = logits[:, :-1, :]            # positions 0..seq_len-2
+        labels = input_ids[:, 1:]             # tokens 1..seq_len-1
+        attn_shifted = attention_mask[:, 1:]  # align with labels
+
+        # Mask to target tokens only (positions at/after first target token)
+        target_mask = torch.zeros_like(labels, dtype=torch.bool)
+        target_mask[:, prompt_length:] = True
+        effective_mask = target_mask & (attn_shifted > 0)
+
+        if effective_mask.sum() == 0:
+            return 0.0
+
+        log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
+        # Gather log probs of the actual labels
+        selected_log_probs = log_probs.gather(-1, labels.unsqueeze(-1)).squeeze(-1)
+
+        # Sum only over target tokens
+        total_log_prob = selected_log_probs[effective_mask].sum().item()
+
         return total_log_prob
     
     def compute_utility(

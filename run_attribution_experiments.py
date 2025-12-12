@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import List, Dict, Optional
 import argparse
 from datetime import datetime
+import time
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -97,6 +98,9 @@ def run_attribution_experiment(
     print(f"Running experiment on: {dataset_path}")
     print(f"{'='*80}\n")
     
+    run_started = datetime.now()
+    run_started_ts = run_started.isoformat()
+    
     # Initialize RAG system
     print("Initializing RAG system...")
     rag = RAGSystem(model_name=model_name, device=device)
@@ -112,13 +116,20 @@ def run_attribution_experiment(
     # Generate target responses for all queries
     print("Generating target responses...")
     target_responses = []
+    processed_documents = []
     for i, item in enumerate(dataset):
         print(f"  Processing query {i+1}/{len(dataset)}...", end='\r')
-        rtarget = rag.generate_target_response(
-            question=item['question'],
-            all_documents=item['documents'],
-            max_new_tokens=50
-        )
+        docs_proc = rag.truncate_documents(item['documents'])
+        processed_documents.append(docs_proc)
+        # Prefer gold answer when provided; fall back to model-generated target
+        if item.get('answer'):
+            rtarget = str(item['answer'])
+        else:
+            rtarget = rag.generate_target_response(
+                question=item['question'],
+                all_documents=docs_proc,
+                max_new_tokens=50
+            )
         target_responses.append(rtarget)
     print(f"\nGenerated {len(target_responses)} target responses\n")
     
@@ -135,8 +146,10 @@ def run_attribution_experiment(
         print(f"Question: {item['question'][:80]}...")
         
         target_response = target_responses[query_idx]
+        docs_proc = processed_documents[query_idx]
         doc_ids = item['document_ids']
-        n_docs = len(item['documents'])
+        n_docs = len(docs_proc)
+        gold_docs = item.get('gold_docs', ['A', 'B'])
         
         # Create utility function
         def utility_function(document_subset: List[str]) -> float:
@@ -153,24 +166,31 @@ def run_attribution_experiment(
             'target_response': target_response,
             'n_documents': n_docs,
             'document_ids': doc_ids,
-            'attributions': {}
+            'documents_raw': item['documents'],
+            'documents': docs_proc,
+            'document_lengths_raw': [len(doc) for doc in item['documents']],
+            'document_lengths': [len(doc) for doc in docs_proc],
+            'attributions': {},
+            'attributions_abs': {},
+            'timings_seconds': {}
         }
         
         # Compute attributions for each method
         for method_name in methods:
             try:
+                method_start = time.perf_counter()
                 if method_name == 'leave_one_out':
-                    attributions = attr.leave_one_out(item['documents'], utility_function)
+                    attributions = attr.leave_one_out(docs_proc, utility_function)
                 
                 elif method_name == 'permutation_shapley':
                     attributions = attr.permutation_shapley(
-                        item['documents'], utility_function, num_permutations=50
+                        docs_proc, utility_function, num_permutations=50
                     )
                 
                 elif method_name == 'monte_carlo_shapley':
                     if n_docs <= 10:
                         attributions = attr.monte_carlo_shapley(
-                            item['documents'], utility_function, num_samples=64
+                            docs_proc, utility_function, num_samples=64
                         )
                     else:
                         print(f"    Skipping Monte Carlo Shapley - too many documents ({n_docs})")
@@ -179,7 +199,7 @@ def run_attribution_experiment(
                 elif method_name == 'kernel_shap':
                     if n_docs <= 10:
                         attributions = attr.kernel_shap(
-                            item['documents'], utility_function, num_samples=64
+                            docs_proc, utility_function, num_samples=64
                         )
                     else:
                         print(f"    Skipping Kernel SHAP - too many documents ({n_docs})")
@@ -187,7 +207,7 @@ def run_attribution_experiment(
                 
                 elif method_name == 'exact_shapley':
                     if n_docs <= 5:
-                        attributions = attr.exact_shapley(item['documents'], utility_function)
+                        attributions = attr.exact_shapley(docs_proc, utility_function)
                     else:
                         print(f"    Skipping Exact Shapley - too many documents ({n_docs})")
                         continue
@@ -199,7 +219,7 @@ def run_attribution_experiment(
                 # Convert attributions to list format (handle dict, array, or list)
                 if isinstance(attributions, dict):
                     # Convert dict {index: value} to list [value_0, value_1, ...]
-                    attributions_list = [attributions.get(i, 0.0) for i in range(len(item['documents']))]
+                    attributions_list = [attributions.get(i, 0.0) for i in range(len(docs_proc))]
                 elif isinstance(attributions, np.ndarray):
                     attributions_list = attributions.tolist()
                 else:
@@ -207,23 +227,26 @@ def run_attribution_experiment(
                 
                 # Store attributions
                 query_results['attributions'][method_name] = attributions_list
+                query_results['attributions_abs'][method_name] = [abs(v) for v in attributions_list]
                 
                 # Use list for metric computation
                 attributions_for_metrics = attributions_list
                 
                 # Compute metrics
-                top_2_accuracy = compute_top_k_accuracy(attributions_for_metrics, doc_ids, k=2)
-                ranks = compute_rank_of_correct_docs(attributions_for_metrics, doc_ids)
+                top_2_accuracy = compute_top_k_accuracy(attributions_for_metrics, doc_ids, k=2, correct_docs=gold_docs)
+                ranks = compute_rank_of_correct_docs(attributions_for_metrics, doc_ids, correct_docs=gold_docs)
                 
                 query_results[f'{method_name}_top2_accuracy'] = top_2_accuracy
                 query_results[f'{method_name}_rank_A'] = ranks.get('A', None)
                 query_results[f'{method_name}_rank_B'] = ranks.get('B', None)
                 
                 print(f"    {method_name}: Top-2 accuracy = {top_2_accuracy}, Rank A = {ranks.get('A')}, Rank B = {ranks.get('B')}")
+                query_results['timings_seconds'][method_name] = time.perf_counter() - method_start
                 
             except Exception as e:
                 print(f"    Error computing {method_name}: {e}")
                 query_results['attributions'][method_name] = None
+                query_results['timings_seconds'][method_name] = None
         
         all_results.append(query_results)
     
@@ -253,12 +276,24 @@ def run_attribution_experiment(
             'n_queries': len(top2_accuracies)
         }
     
+    runtime_seconds = (datetime.now() - run_started).total_seconds()
+    
     return {
         'dataset_path': dataset_path,
         'model_name': model_name,
         'timestamp': datetime.now().isoformat(),
+        'run_started': run_started_ts,
+        'runtime_seconds': runtime_seconds,
         'n_queries': len(dataset),
         'methods': methods,
+        'run_config': {
+            'model_name': model_name,
+            'device': rag.device,
+            'max_queries': max_queries,
+            'dataset_path': dataset_path,
+            'tokenizer_max_length': getattr(rag, "max_input_tokens", None),
+            'max_doc_tokens': getattr(rag, "max_doc_tokens", None),
+        },
         'results': all_results,
         'aggregate_metrics': aggregate_metrics
     }
