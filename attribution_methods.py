@@ -623,6 +623,17 @@ def attention_attribution(
         outputs = model(inputs["input_ids"], output_attentions=True)
     
     attentions = outputs.attentions
+    
+    # Check if attention weights are available
+    # SDPA (Scaled Dot Product Attention) doesn't support output_attentions
+    if attentions is None:
+        raise RuntimeError(
+            "Attention weights not available. The model is likely using SDPA attention "
+            "which doesn't support output_attentions=True. To use attention attribution, "
+            "load the model with: attn_implementation='eager'\n"
+            "Example: AutoModelForCausalLM.from_pretrained(..., attn_implementation='eager')"
+        )
+    
     n_layers = len(attentions)
     seq_len = inputs["input_ids"].shape[1]
     

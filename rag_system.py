@@ -109,7 +109,8 @@ class RAGSystem:
         device: Optional[str] = None,
         token: Optional[str] = None,
         max_input_tokens: Optional[int] = None,
-        max_doc_tokens: Optional[int] = None
+        max_doc_tokens: Optional[int] = None,
+        attn_implementation: Optional[str] = None
     ):
         """
         Initialize RAG system with LLM model.
@@ -118,11 +119,16 @@ class RAGSystem:
             model_name: HuggingFace model identifier
             device: Device to use ('cuda', 'cpu', or None for auto)
             token: HuggingFace token for authentication (or set HF_TOKEN env var)
+            max_input_tokens: Maximum input tokens (default: model's max length)
+            max_doc_tokens: Maximum tokens per document (default: no truncation)
+            attn_implementation: Attention implementation ('eager', 'sdpa', or None for default).
+                                 Use 'eager' if you need attention weights for attribution.
         """
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.model_name = model_name
         self.max_input_tokens = max_input_tokens
         self.max_doc_tokens = max_doc_tokens
+        self.attn_implementation = attn_implementation
         
         # Get token from parameter or environment variable
         hf_token = token or os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
@@ -138,12 +144,18 @@ class RAGSystem:
             self.max_input_tokens = getattr(self.tokenizer, "model_max_length", 2048)
         
         print(f"Loading model...")
+        model_kwargs = {
+            "torch_dtype": torch.float16 if self.device == "cuda" else torch.float32,
+            "device_map": "auto" if self.device == "cuda" else None,
+            "low_cpu_mem_usage": True,
+            "token": hf_token,
+        }
+        if attn_implementation:
+            model_kwargs["attn_implementation"] = attn_implementation
+        
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
-            torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
-            device_map="auto" if self.device == "cuda" else None,
-            low_cpu_mem_usage=True,
-            token=hf_token
+            **model_kwargs
         )
         
         if self.device == "cpu":
