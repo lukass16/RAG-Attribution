@@ -328,6 +328,8 @@ def gradient_attribution(
     rag.model = model
     rag.tokenizer = tokenizer
     rag.device = device
+    rag.max_doc_tokens = None  # No truncation in attribution methods
+    rag.max_input_tokens = None
     
     # Format prompt with all documents
     prompt = rag.format_prompt(question, documents)
@@ -366,16 +368,25 @@ def gradient_attribution(
         logits = outputs.logits
         
         # Compute utility: sum of log probabilities for target tokens
-        total_log_prob = 0.0
+        # For autoregressive models, logits[0, j, :] predicts token at position j+1
+        # So to predict first target token, we use logits[0, prompt_length-1, :]
+        log_probs_list = []
         for i, token_id in enumerate(target_ids):
-            pos_idx = prompt_length + i
+            # Position in logits that predicts this target token
+            pos_idx = prompt_length - 1 + i
             if pos_idx >= logits.shape[1]:
                 break
             
             token_logits = logits[0, pos_idx, :]
             log_probs_token = torch.nn.functional.log_softmax(token_logits, dim=-1)
             log_prob = log_probs_token[token_id]
-            total_log_prob += log_prob
+            log_probs_list.append(log_prob)
+        
+        if len(log_probs_list) == 0:
+            return {i: 0.0 for i in range(len(documents))}
+        
+        # Sum all log probabilities (as tensor)
+        total_log_prob = torch.stack(log_probs_list).sum()
         
         # Backward pass
         total_log_prob.backward()
@@ -441,6 +452,8 @@ def integrated_gradients_attribution(
     rag.model = model
     rag.tokenizer = tokenizer
     rag.device = device
+    rag.max_doc_tokens = None  # No truncation in attribution methods
+    rag.max_input_tokens = None
     
     # Format prompt with all documents
     prompt = rag.format_prompt(question, documents)
@@ -485,9 +498,11 @@ def integrated_gradients_attribution(
         logits = outputs.logits
         
         # Compute utility: sum of log probabilities for target tokens
+        # For autoregressive models, logits[0, j, :] predicts token at position j+1
+        # So to predict first target token, we use logits[0, prompt_length-1, :]
         log_probs_list = []
         for i, token_id in enumerate(target_ids):
-            pos_idx = prompt_length + i
+            pos_idx = prompt_length - 1 + i
             if pos_idx >= logits.shape[1]:
                 break
             
@@ -500,7 +515,7 @@ def integrated_gradients_attribution(
             return torch.tensor(0.0, device=device).unsqueeze(0)
         
         # Sum all log probabilities
-        total_log_prob = sum(log_probs_list)
+        total_log_prob = torch.stack(log_probs_list).sum()
         
         # Return as a single value (IG expects scalar output)
         return total_log_prob.unsqueeze(0)
@@ -562,6 +577,8 @@ def attention_attribution(
     rag.model = model
     rag.tokenizer = tokenizer
     rag.device = device
+    rag.max_doc_tokens = None  # No truncation in attribution methods
+    rag.max_input_tokens = None
     
     prompt = rag.format_prompt(question, documents)
     inputs = tokenizer(prompt, return_tensors="pt").to(device)
