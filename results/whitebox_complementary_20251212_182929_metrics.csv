@@ -1,2 +1,0 @@
-method,top2_accuracy,mean_rank_A,mean_rank_B,n_queries
-integrated_gradients,0.6,1.6,2.4,10
