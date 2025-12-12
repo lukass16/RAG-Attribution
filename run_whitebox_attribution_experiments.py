@@ -385,9 +385,11 @@ def main():
     attn_impl = args.attn_implementation
     # If methods not specified, default includes 'attention'; if specified, check if 'attention' is in list
     uses_attention = (args.methods is None) or ('attention' in args.methods)
+    print(f"DEBUG: args.methods={args.methods}, uses_attention={uses_attention}, attn_impl before={attn_impl}")
     if uses_attention and attn_impl is None:
         print("Note: 'attention' method requires eager attention. Setting --attn-implementation=eager")
         attn_impl = 'eager'
+    print(f"DEBUG: attn_impl after={attn_impl}")
     
     # Run experiment
     results = run_whitebox_attribution_experiment(

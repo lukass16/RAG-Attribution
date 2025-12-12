@@ -151,7 +151,10 @@ class RAGSystem:
             "token": hf_token,
         }
         if attn_implementation:
+            print(f"  Using attention implementation: {attn_implementation}")
             model_kwargs["attn_implementation"] = attn_implementation
+        else:
+            print(f"  Using default attention implementation (likely SDPA)")
         
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
