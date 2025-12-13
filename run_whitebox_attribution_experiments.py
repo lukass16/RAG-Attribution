@@ -87,7 +87,8 @@ def run_whitebox_attribution_experiment(
     max_queries: Optional[int] = None,
     methods: Optional[List[str]] = None,
     ig_baseline_type: str = 'zero',
-    ig_n_steps: int = 50
+    ig_n_steps: int = 50,
+    attn_implementation: Optional[str] = None
 ) -> Dict:
     """
     Run whitebox attribution experiment on a dataset.
@@ -100,6 +101,7 @@ def run_whitebox_attribution_experiment(
         methods: List of whitebox attribution methods to use (None = all)
         ig_baseline_type: Baseline type for integrated gradients ('zero' or 'pad')
         ig_n_steps: Number of steps for integrated gradients approximation
+        attn_implementation: Attention implementation ('eager' required for attention method)
     
     Returns:
         Dictionary containing results and metrics
@@ -111,9 +113,17 @@ def run_whitebox_attribution_experiment(
     run_started = datetime.now()
     run_started_ts = run_started.isoformat()
     
+    # Auto-select eager attention if 'attention' method will be used
+    effective_attn_impl = attn_implementation
+    # Check if attention method will be used (either in methods list or in defaults)
+    will_use_attention = (methods is None) or ('attention' in methods)
+    if will_use_attention and effective_attn_impl is None:
+        print("Note: 'attention' method requires eager attention. Auto-setting attn_implementation='eager'")
+        effective_attn_impl = 'eager'
+    
     # Initialize RAG system
     print("Initializing RAG system...")
-    rag = RAGSystem(model_name=model_name, device=device)
+    rag = RAGSystem(model_name=model_name, device=device, attn_implementation=effective_attn_impl)
     print("RAG system ready!\n")
     
     # Load dataset
@@ -308,6 +318,7 @@ def run_whitebox_attribution_experiment(
             'max_doc_tokens': getattr(rag, "max_doc_tokens", None),
             'ig_baseline_type': ig_baseline_type,
             'ig_n_steps': ig_n_steps,
+            'attn_implementation': attn_implementation,
         },
         'results': all_results,
         'aggregate_metrics': aggregate_metrics
@@ -372,8 +383,21 @@ def main():
                        help='Baseline type for integrated gradients')
     parser.add_argument('--ig-steps', type=int, default=50,
                        help='Number of steps for integrated gradients')
+    parser.add_argument('--attn-implementation', type=str, default=None,
+                       choices=['eager', 'sdpa', 'flash_attention_2'],
+                       help="Attention implementation. Use 'eager' for attention attribution method.")
     
     args = parser.parse_args()
+    
+    # Auto-select eager attention if 'attention' method is requested (or will be used by default)
+    attn_impl = args.attn_implementation
+    # If methods not specified, default includes 'attention'; if specified, check if 'attention' is in list
+    uses_attention = (args.methods is None) or ('attention' in args.methods)
+    print(f"DEBUG: args.methods={args.methods}, uses_attention={uses_attention}, attn_impl before={attn_impl}")
+    if uses_attention and attn_impl is None:
+        print("Note: 'attention' method requires eager attention. Setting --attn-implementation=eager")
+        attn_impl = 'eager'
+    print(f"DEBUG: attn_impl after={attn_impl}")
     
     # Run experiment
     results = run_whitebox_attribution_experiment(
@@ -383,7 +407,8 @@ def main():
         max_queries=args.max_queries,
         methods=args.methods,
         ig_baseline_type=args.ig_baseline,
-        ig_n_steps=args.ig_steps
+        ig_n_steps=args.ig_steps,
+        attn_implementation=attn_impl
     )
     
     # Save results
