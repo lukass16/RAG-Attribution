@@ -23,13 +23,13 @@ def create_architecture_diagram(output_path: str = "figures/architecture.png"):
 
     components = {
         "Question\nQ": (2, 8, COLORS["accent"], 2.2, 1.0),
-        "Documents\nD = {d₁, ..., d_n}": (2, 5.5, COLORS["tertiary"], 2.2, 1.0),
+        "Documents\nD = {d1, ..., dn}": (2, 5.5, COLORS["tertiary"], 2.2, 1.0),
         "RAG System\n(LLM)": (6, 6.75, COLORS["warning"], 2.5, 1.2),
         "Target Response\nR_target": (10.5, 8, COLORS["error"], 2.5, 1.0),
-        "Document Subsets\nS ⊆ D": (6, 4, COLORS["gold"], 2.5, 1.0),
+        "Document Subsets\nS subset D": (6, 4, COLORS["gold"], 2.5, 1.0),
         "Utility Function\nv(S)": (10.5, 4, COLORS["quaternary"], 2.5, 1.0),
         "Attribution\nMethods": (14.5, 6, COLORS["secondary"], 2.5, 1.2),
-        "Attribution\nScores φᵢ": (14.5, 2.5, COLORS["primary"], 2.5, 1.0),
+        "Attribution\nScores phi_i": (14.5, 2.5, COLORS["primary"], 2.5, 1.0),
     }
 
     for name, (x, y, color, width, height) in components.items():
@@ -439,70 +439,144 @@ def plot_attribution_scores_example(results: List[Dict], output_path: str = "fig
     plt.close()
 
 
-def plot_ablation_study(output_path: str = "figures/ablation_study.png"):
-    """Placeholder ablation study visualization."""
+def _compute_top2_accuracy(attributions: List[float], doc_ids: List[str], correct_docs: List[str] = ["A", "B"], use_abs: bool = True) -> bool:
+    """Compute top-2 accuracy for a given ranking method."""
+    if use_abs:
+        sorted_indices = sorted(range(len(doc_ids)), key=lambda i: abs(attributions[i]), reverse=True)
+    else:
+        sorted_indices = sorted(range(len(doc_ids)), key=lambda i: attributions[i], reverse=True)
+    top_2_docs = [doc_ids[i] for i in sorted_indices[:2]]
+    return set(correct_docs).issubset(set(top_2_docs))
+
+
+def plot_ablation_study(results: List[Dict] = None, output_path: str = "figures/ablation_study.png"):
+    """Ablation study visualization using real data from all datasets."""
     ensure_dir(Path(output_path).parent)
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
 
-    sample_sizes = [16, 32, 64, 128, 256]
-    top2_acc_simulated = [0.65, 0.72, 0.78, 0.80, 0.81]
-    axes[0].plot(
-        sample_sizes,
-        top2_acc_simulated,
-        marker="o",
-        linewidth=3,
-        markersize=10,
-        color=COLORS["primary"],
-        markerfacecolor=COLORS["primary"],
-        markeredgecolor="black",
-        markeredgewidth=1.5,
-    )
-    axes[0].set_xlabel("Number of Samples", fontweight="bold")
-    axes[0].set_ylabel("Top-2 Accuracy", fontweight="bold")
-    axes[0].set_title("Sensitivity to Sample Size\n(Monte Carlo Shapley)", fontweight="bold", pad=10)
-    axes[0].grid(True, alpha=0.3, linestyle="--")
-    axes[0].set_ylim([0.6, 0.85])
-    axes[0].spines["top"].set_visible(False)
-    axes[0].spines["right"].set_visible(False)
+    # Plot 1: Method performance comparison across all datasets
+    if results and len(results) > 0:
+        # Print which datasets are being used
+        dataset_names = [Path(r.get("dataset_path", "unknown")).stem for r in results]
+        print(f"  Ablation study: Using {len(results)} dataset(s): {', '.join(set(dataset_names))}")
+        # Aggregate method performance across all datasets
+        method_data = {}
+        for result in results:
+            for method_name in ["leave_one_out", "permutation_shapley", "monte_carlo_shapley"]:
+                if method_name in result.get("aggregate_metrics", {}):
+                    metrics = result["aggregate_metrics"][method_name]
+                    if method_name not in method_data:
+                        method_data[method_name] = {"top2_accs": [], "mean_ranks": []}
+                    method_data[method_name]["top2_accs"].append(metrics.get("top2_accuracy", 0.0))
+                    mean_rank = (metrics.get("mean_rank_A", 0.0) + metrics.get("mean_rank_B", 0.0)) / 2
+                    method_data[method_name]["mean_ranks"].append(mean_rank)
+        
+        if method_data:
+            methods = []
+            avg_top2_accs = []
+            std_top2_accs = []
+            
+            for method_name in ["leave_one_out", "permutation_shapley", "monte_carlo_shapley"]:
+                if method_name in method_data and method_data[method_name]["top2_accs"]:
+                    methods.append(format_method_name(method_name))
+                    accs = method_data[method_name]["top2_accs"]
+                    avg_top2_accs.append(np.mean(accs))
+                    std_top2_accs.append(np.std(accs) if len(accs) > 1 else 0.0)
+            
+            if methods:
+                x = np.arange(len(methods))
+                bars = axes[0].bar(x, avg_top2_accs, color=COLORS["primary"], 
+                       alpha=0.8, edgecolor="black", linewidth=1.2, yerr=std_top2_accs, capsize=5)
+                axes[0].set_xticks(x)
+                axes[0].set_xticklabels(methods, rotation=15, ha="right")
+                axes[0].set_ylabel("Top-2 Accuracy", fontweight="bold")
+                axes[0].set_title("Method Performance Comparison\n(Average Across All Datasets)", fontweight="bold", pad=10)
+                axes[0].set_ylim([0, 1.1])
+                axes[0].grid(axis="y", alpha=0.3, linestyle="--")
+                axes[0].spines["top"].set_visible(False)
+                axes[0].spines["right"].set_visible(False)
+                # Add value labels on bars
+                for i, (method, acc, std) in enumerate(zip(methods, avg_top2_accs, std_top2_accs)):
+                    label = f"{acc:.2f}"
+                    if std > 0:
+                        label += f"\n±{std:.2f}"
+                    axes[0].text(i, acc + std + 0.03, label, ha="center", va="bottom", fontweight="bold", fontsize=9)
+        else:
+            axes[0].text(0.5, 0.5, "No method data available", ha="center", va="center", transform=axes[0].transAxes)
+            axes[0].set_title("Method Performance", fontweight="bold", pad=10)
+    else:
+        axes[0].text(0.5, 0.5, "No results data available", ha="center", va="center", transform=axes[0].transAxes)
+        axes[0].set_title("Method Performance", fontweight="bold", pad=10)
 
-    methods = ["Leave-One-Out", "Permutation\nShapley", "Monte Carlo\nShapley"]
-    raw_score_acc = [0.6, 0.62, 0.64]
-    abs_value_acc = [1.0, 0.8, 0.9]
-    x = np.arange(len(methods))
-    width = 0.35
-    axes[1].bar(
-        x - width / 2,
-        raw_score_acc,
-        width,
-        label="Raw Score",
-        alpha=0.8,
-        color=COLORS["secondary"],
-        edgecolor="black",
-        linewidth=1.2,
-    )
-    axes[1].bar(
-        x + width / 2,
-        abs_value_acc,
-        width,
-        label="Absolute Value",
-        alpha=0.8,
-        color=COLORS["primary"],
-        edgecolor="black",
-        linewidth=1.2,
-    )
-    axes[1].set_xlabel("Attribution Method", fontweight="bold")
-    axes[1].set_ylabel("Top-2 Accuracy", fontweight="bold")
-    axes[1].set_title("Impact of Ranking by Absolute Value", fontweight="bold", pad=10)
-    axes[1].set_xticks(x)
-    axes[1].set_xticklabels(methods)
-    axes[1].legend(framealpha=0.9)
-    axes[1].grid(axis="y", alpha=0.3, linestyle="--")
-    axes[1].set_ylim([0, 1.15])
-    axes[1].spines["top"].set_visible(False)
-    axes[1].spines["right"].set_visible(False)
+    # Plot 2: Impact of ranking by absolute value vs raw score
+    if results and len(results) > 0:
+        # Compute accuracy for both ranking methods
+        method_comparison = {}
+        for result in results:
+            for query_result in result.get("results", []):
+                doc_ids = query_result.get("document_ids", [])
+                # Gold documents are always A and B in our datasets (complementary, synergy, duplicate)
+                gold_docs = ["A", "B"]
+                
+                for method_name in ["leave_one_out", "permutation_shapley", "monte_carlo_shapley"]:
+                    if method_name not in query_result.get("attributions", {}):
+                        continue
+                    
+                    if method_name not in method_comparison:
+                        method_comparison[method_name] = {"raw": [], "abs": []}
+                    
+                    attributions = query_result["attributions"][method_name]
+                    if len(attributions) != len(doc_ids):
+                        continue
+                    
+                    # Compute accuracy with raw scores (descending order)
+                    raw_acc = _compute_top2_accuracy(attributions, doc_ids, gold_docs, use_abs=False)
+                    # Compute accuracy with absolute values (descending order)
+                    abs_acc = _compute_top2_accuracy(attributions, doc_ids, gold_docs, use_abs=True)
+                    
+                    method_comparison[method_name]["raw"].append(1.0 if raw_acc else 0.0)
+                    method_comparison[method_name]["abs"].append(1.0 if abs_acc else 0.0)
+        
+        if method_comparison:
+            methods = []
+            raw_accs = []
+            abs_accs = []
+            for method_name in ["leave_one_out", "permutation_shapley", "monte_carlo_shapley"]:
+                if method_name in method_comparison and method_comparison[method_name]["raw"]:
+                    methods.append(format_method_name(method_name))
+                    raw_accs.append(np.mean(method_comparison[method_name]["raw"]))
+                    abs_accs.append(np.mean(method_comparison[method_name]["abs"]))
+            
+            if methods:
+                x = np.arange(len(methods))
+                width = 0.35
+                axes[1].bar(x - width / 2, raw_accs, width, label="Raw Score", 
+                           alpha=0.8, color=COLORS["secondary"], edgecolor="black", linewidth=1.2)
+                axes[1].bar(x + width / 2, abs_accs, width, label="Absolute Value", 
+                           alpha=0.8, color=COLORS["primary"], edgecolor="black", linewidth=1.2)
+                axes[1].set_xlabel("Attribution Method", fontweight="bold")
+                axes[1].set_ylabel("Top-2 Accuracy", fontweight="bold")
+                axes[1].set_title("Impact of Ranking by Absolute Value", fontweight="bold", pad=10)
+                axes[1].set_xticks(x)
+                axes[1].set_xticklabels(methods, rotation=15, ha="right")
+                axes[1].legend(framealpha=0.9)
+                axes[1].grid(axis="y", alpha=0.3, linestyle="--")
+                axes[1].set_ylim([0, 1.15])
+                axes[1].spines["top"].set_visible(False)
+                axes[1].spines["right"].set_visible(False)
+            else:
+                axes[1].text(0.5, 0.5, "No attribution data available", ha="center", va="center", transform=axes[1].transAxes)
+                axes[1].set_title("Impact of Ranking by Absolute Value", fontweight="bold", pad=10)
+        else:
+            axes[1].text(0.5, 0.5, "No comparison data available", ha="center", va="center", transform=axes[1].transAxes)
+            axes[1].set_title("Impact of Ranking by Absolute Value", fontweight="bold", pad=10)
+    else:
+        axes[1].text(0.5, 0.5, "No results data available", ha="center", va="center", transform=axes[1].transAxes)
+        axes[1].set_title("Impact of Ranking by Absolute Value", fontweight="bold", pad=10)
 
     plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    print(f"Saved ablation study to {output_path}")
     plt.close()
 
 
@@ -661,4 +735,5 @@ def run_summary(results_dir: str, files: List[str], output_dir: str):
         create_summary_table(results, os.path.join(output_dir, "summary_table.png"))
     if not metrics_df.empty:
         plot_dataset_summary(metrics_df, os.path.join(output_dir, "dataset_method_summary"))
-    plot_ablation_study(os.path.join(output_dir, "ablation_study.png"))
+    plot_ablation_study(results, os.path.join(output_dir, "ablation_study.png"))
+

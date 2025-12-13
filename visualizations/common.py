@@ -119,3 +119,4 @@ def load_metrics_frames(results_dir: str = "results") -> pd.DataFrame:
         return pd.DataFrame()
 
     return pd.concat(frames, ignore_index=True, sort=False)
+

@@ -5,6 +5,7 @@ Additional specialized visualizations.
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -139,13 +140,25 @@ def plot_baseline_comparison(results_dir: str = "results", output_path: str = "f
     plt.close()
 
 
-def plot_hyperparameter_sensitivity(output_path: str = "figures/hyperparameter_sensitivity.png"):
+def plot_hyperparameter_sensitivity(results_dir: str = "results", output_path: str = "figures/hyperparameter_sensitivity.png"):
+    """
+    Plot hyperparameter sensitivity analysis.
+    
+    Note: The first three plots (sample size, permutation count, token count) use illustrative
+    placeholder values as these require running experiments with different hyperparameter values.
+    The ranking method comparison (bottom-right) uses real data from results.
+    """
+    import json
+    
     ensure_dir(Path(output_path).parent)
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
+    # Plot 1: Monte Carlo Shapley - Sample Size Sensitivity
+    # NOTE: This requires running experiments with different num_samples values
+    # Current results use num_samples=64, so we show illustrative values
     sample_sizes = [16, 32, 64, 128, 256]
-    top2_acc = [0.65, 0.72, 0.78, 0.80, 0.81]
-    computation_time = [0.5, 1.0, 2.0, 4.0, 8.0]
+    top2_acc = [0.65, 0.72, 0.78, 0.80, 0.81]  # Illustrative
+    computation_time = [0.5, 1.0, 2.0, 4.0, 8.0]  # Illustrative
     ax1 = axes[0, 0]
     ax1_twin = ax1.twinx()
     ax1.plot(sample_sizes, top2_acc, "o-", color="steelblue", linewidth=2, markersize=8, label="Top-2 Accuracy")
@@ -153,47 +166,131 @@ def plot_hyperparameter_sensitivity(output_path: str = "figures/hyperparameter_s
     ax1.set_xlabel("Number of Samples", fontsize=11)
     ax1.set_ylabel("Top-2 Accuracy", fontsize=11, color="steelblue")
     ax1_twin.set_ylabel("Computation Time (s)", fontsize=11, color="coral")
-    ax1.set_title("Monte Carlo Shapley:\nSample Size Sensitivity", fontsize=12, fontweight="bold")
+    ax1.set_title("Monte Carlo Shapley:\nSample Size Sensitivity\n(Illustrative)", fontsize=12, fontweight="bold")
     ax1.grid(True, alpha=0.3)
     ax1.tick_params(axis="y", labelcolor="steelblue")
     ax1_twin.tick_params(axis="y", labelcolor="coral")
 
+    # Plot 2: Permutation Shapley - Permutation Count Sensitivity
+    # NOTE: This requires running experiments with different num_permutations values
     perm_counts = [10, 25, 50, 100, 200]
-    top2_acc_perm = [0.70, 0.75, 0.80, 0.82, 0.82]
+    top2_acc_perm = [0.70, 0.75, 0.80, 0.82, 0.82]  # Illustrative
     axes[0, 1].plot(perm_counts, top2_acc_perm, "o-", color="mediumseagreen", linewidth=2, markersize=8)
     axes[0, 1].set_xlabel("Number of Permutations", fontsize=11)
     axes[0, 1].set_ylabel("Top-2 Accuracy", fontsize=11)
-    axes[0, 1].set_title("Permutation Shapley:\nPermutation Count Sensitivity", fontsize=12, fontweight="bold")
+    axes[0, 1].set_title("Permutation Shapley:\nPermutation Count Sensitivity\n(Illustrative)", fontsize=12, fontweight="bold")
     axes[0, 1].grid(True, alpha=0.3)
 
+    # Plot 3: Target Response Generation - Token Count Sensitivity
+    # NOTE: This requires running experiments with different max_new_tokens values
     token_counts = [25, 50, 75, 100]
-    top2_acc_tokens = [0.75, 0.80, 0.78, 0.77]
+    top2_acc_tokens = [0.75, 0.80, 0.78, 0.77]  # Illustrative
     axes[1, 0].plot(token_counts, top2_acc_tokens, "o-", color="purple", linewidth=2, markersize=8)
     axes[1, 0].set_xlabel("Max New Tokens", fontsize=11)
     axes[1, 0].set_ylabel("Top-2 Accuracy", fontsize=11)
-    axes[1, 0].set_title("Target Response Generation:\nToken Count Sensitivity", fontsize=12, fontweight="bold")
+    axes[1, 0].set_title("Target Response Generation:\nToken Count Sensitivity\n(Illustrative)", fontsize=12, fontweight="bold")
     axes[1, 0].grid(True, alpha=0.3)
 
-    ranking_methods = ["Raw Score", "Absolute Value"]
+    # Plot 4: Ranking Method Impact - USE REAL DATA
+    results_path = Path(results_dir)
+    if results_path.exists():
+        json_files = list(results_path.glob("*_full.json"))
+        if json_files:
+            # Compute from real data (same logic as ablation study)
+            method_comparison = {}
+            for json_file in json_files:
+                try:
+                    with json_file.open() as f:
+                        result = json.load(f)
+                    for query_result in result.get("results", []):
+                        doc_ids = query_result.get("document_ids", [])
+                        gold_docs = ["A", "B"]
+                        
+                        for method_name in ["leave_one_out", "permutation_shapley", "monte_carlo_shapley"]:
+                            if method_name not in query_result.get("attributions", {}):
+                                continue
+                            
+                            if method_name not in method_comparison:
+                                method_comparison[method_name] = {"raw": [], "abs": []}
+                            
+                            attributions = query_result["attributions"][method_name]
+                            if len(attributions) != len(doc_ids):
+                                continue
+                            
+                            # Compute accuracy with raw scores
+                            sorted_raw = sorted(range(len(doc_ids)), key=lambda i: attributions[i], reverse=True)
+                            top2_raw = [doc_ids[i] for i in sorted_raw[:2]]
+                            raw_acc = set(gold_docs).issubset(set(top2_raw))
+                            
+                            # Compute accuracy with absolute values
+                            sorted_abs = sorted(range(len(doc_ids)), key=lambda i: abs(attributions[i]), reverse=True)
+                            top2_abs = [doc_ids[i] for i in sorted_abs[:2]]
+                            abs_acc = set(gold_docs).issubset(set(top2_abs))
+                            
+                            method_comparison[method_name]["raw"].append(1.0 if raw_acc else 0.0)
+                            method_comparison[method_name]["abs"].append(1.0 if abs_acc else 0.0)
+                except Exception as e:
+                    print(f"Error loading {json_file}: {e}")
+            
+            if method_comparison:
+                methods = []
+                raw_accs = []
+                abs_accs = []
+                method_order = ["leave_one_out", "permutation_shapley", "monte_carlo_shapley"]
+                method_labels = ["Leave-One-Out", "Permutation\nShapley", "Monte Carlo\nShapley"]
+                
+                for method_name, method_label in zip(method_order, method_labels):
+                    if method_name in method_comparison and method_comparison[method_name]["raw"]:
+                        methods.append(method_label)
+                        raw_accs.append(np.mean(method_comparison[method_name]["raw"]))
+                        abs_accs.append(np.mean(method_comparison[method_name]["abs"]))
+                
+                if methods:
+                    x = range(len(methods))
+                    width = 0.35
+                    axes[1, 1].bar([i - width / 2 for i in x], raw_accs, width, label="Raw Score", 
+                                  alpha=0.7, color="coral", edgecolor="black", linewidth=1.2)
+                    axes[1, 1].bar([i + width / 2 for i in x], abs_accs, width, label="Absolute Value", 
+                                  alpha=0.7, color="steelblue", edgecolor="black", linewidth=1.2)
+                    axes[1, 1].set_xlabel("Attribution Method", fontsize=11)
+                    axes[1, 1].set_ylabel("Top-2 Accuracy", fontsize=11)
+                    axes[1, 1].set_title("Ranking Method Impact\n(From Real Data)", fontsize=12, fontweight="bold")
+                    axes[1, 1].set_xticks(list(x))
+                    axes[1, 1].set_xticklabels(methods)
+                    axes[1, 1].legend()
+                    axes[1, 1].grid(axis="y", alpha=0.3)
+                    axes[1, 1].set_ylim([0, 1.1])
+                else:
+                    _plot_placeholder_ranking(axes[1, 1])
+            else:
+                _plot_placeholder_ranking(axes[1, 1])
+        else:
+            _plot_placeholder_ranking(axes[1, 1])
+    else:
+        _plot_placeholder_ranking(axes[1, 1])
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
+
+
+def _plot_placeholder_ranking(ax):
+    """Plot placeholder ranking method comparison when no data is available."""
     methods = ["Leave-One-Out", "Permutation\nShapley", "Monte Carlo\nShapley"]
     raw_scores = [0.0, 0.0, 0.0]
     abs_values = [1.0, 0.8, 0.9]
     x = range(len(methods))
     width = 0.35
-    axes[1, 1].bar([i - width / 2 for i in x], raw_scores, width, label="Raw Score", alpha=0.7, color="coral")
-    axes[1, 1].bar([i + width / 2 for i in x], abs_values, width, label="Absolute Value", alpha=0.7, color="steelblue")
-    axes[1, 1].set_xlabel("Attribution Method", fontsize=11)
-    axes[1, 1].set_ylabel("Top-2 Accuracy", fontsize=11)
-    axes[1, 1].set_title("Ranking Method Impact", fontsize=12, fontweight="bold")
-    axes[1, 1].set_xticks(list(x))
-    axes[1, 1].set_xticklabels(methods)
-    axes[1, 1].legend()
-    axes[1, 1].grid(axis="y", alpha=0.3)
-    axes[1, 1].set_ylim([0, 1.1])
-
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    plt.close()
+    ax.bar([i - width / 2 for i in x], raw_scores, width, label="Raw Score", alpha=0.7, color="coral")
+    ax.bar([i + width / 2 for i in x], abs_values, width, label="Absolute Value", alpha=0.7, color="steelblue")
+    ax.set_xlabel("Attribution Method", fontsize=11)
+    ax.set_ylabel("Top-2 Accuracy", fontsize=11)
+    ax.set_title("Ranking Method Impact\n(Illustrative)", fontsize=12, fontweight="bold")
+    ax.set_xticks(list(x))
+    ax.set_xticklabels(methods)
+    ax.legend()
+    ax.grid(axis="y", alpha=0.3)
+    ax.set_ylim([0, 1.1])
 
 
 def plot_challenges_and_limitations(output_path: str = "figures/challenges.png"):
@@ -244,5 +341,5 @@ def run_extras(results_dir: str, output_dir: str):
     ensure_dir(Path(output_dir))
     plot_trustworthy_aspects(results_dir=results_dir, output_path=Path(output_dir) / "trustworthy_aspects.png")
     plot_baseline_comparison(results_dir=results_dir, output_path=Path(output_dir) / "baseline_comparison.png")
-    plot_hyperparameter_sensitivity(output_path=Path(output_dir) / "hyperparameter_sensitivity.png")
+    plot_hyperparameter_sensitivity(results_dir=results_dir, output_path=Path(output_dir) / "hyperparameter_sensitivity.png")
     plot_challenges_and_limitations(output_path=Path(output_dir) / "challenges.png")

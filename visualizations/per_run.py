@@ -167,3 +167,4 @@ def run_per_run(input_path: str, output_dir: str):
     plot_rank_box(df, out_dir / f"{prefix}_rank_box.png", method_order)
     plot_timings(df_timing, out_dir / f"{prefix}_timings.png", method_order)
     plot_precision_recall(df_pr, out_dir / f"{prefix}_precision_recall.png", method_order)
+
